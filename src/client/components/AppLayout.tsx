@@ -7,11 +7,13 @@ import {
   IconLogout,
   IconSettings,
   IconStats,
+  IconTemplate,
   IconToday,
 } from './Icons';
 
 const LINKS = [
   { to: '/session', label: 'Hoy', icon: IconToday },
+  { to: '/templates', label: 'Plantillas', icon: IconTemplate },
   { to: '/history', label: 'Histórico', icon: IconHistory },
   { to: '/library', label: 'Biblioteca', icon: IconLibrary },
   { to: '/catalog', label: 'Catálogo', icon: IconCatalog },

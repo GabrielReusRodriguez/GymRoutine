@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { Exercise } from '../../db/schema';
-import type { SetEntry } from '../../shared/types';
+import type { SetEntry, TemplateInput, TemplateItemPrefill } from '../../shared/types';
 import type { LibraryExercise } from '../../library/types';
 import { getLibraryExercise } from '../../library';
 import { getSessionByDate, saveSession } from '../../db/repositories/sessions';
 import { listVisibleExercises } from '../../db/repositories/exercises';
+import { applyTemplate, createTemplate, listTemplates } from '../../db/repositories/templates';
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { TemplatePicker } from '../components/TemplatePicker';
 import { LibraryDrawer } from '../components/LibraryDrawer';
 import { SeriesEditor } from '../components/SeriesEditor';
-import { IconInfo, IconPlus, IconTrash } from '../components/Icons';
+import { IconInfo, IconPlus, IconTemplate, IconTrash, IconX } from '../components/Icons';
 import {
   formatDateLong,
   isValidISODate,
@@ -67,9 +69,16 @@ export function SessionPage() {
     [handle, user!.id, date],
   );
 
+  const templates = useAsync(() => listTemplates(handle, user!.id), [handle, user!.id]);
+
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [notes, setNotes] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [drawer, setDrawer] = useState<LibraryExercise | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -119,6 +128,87 @@ export function SessionPage() {
     setDrafts((previous) => [...previous, draftFromExercise(exercise)]);
     setPickerOpen(false);
     setSuccess(null);
+  };
+
+  /** Fusiona los ejercicios de una plantilla con lo ya cargado (sin duplicar). */
+  const mergeTemplate = (items: TemplateItemPrefill[]) => {
+    setDrafts((previous) => {
+      const existing = new Set(previous.map((draft) => draft.exerciseId));
+      const added = items
+        .filter((item) => !existing.has(item.exerciseId))
+        .map<Draft>((item) => ({
+          key: newKey(),
+          exerciseId: item.exerciseId,
+          name: item.name,
+          type: item.type,
+          libraryId: item.libraryId,
+          duration: item.durationMin === null ? '' : String(item.durationMin),
+          distance: item.distanceKm === null ? '' : String(item.distanceKm),
+          sets: item.sets,
+        }));
+      return added.length === 0 ? previous : [...previous, ...added];
+    });
+  };
+
+  const loadTemplate = async (templateId: number) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const application = await applyTemplate(handle, user!.id, templateId);
+      mergeTemplate(application.items);
+      setTemplatePickerOpen(false);
+      setSuccess(`Plantilla "${application.name}" cargada.`);
+      if (application.skipped.length > 0) {
+        setError(`No se pudieron cargar: ${application.skipped.join(', ')}.`);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
+  // "Aplicar a hoy" desde la pantalla de plantillas (?template=<id>).
+  useEffect(() => {
+    const raw = searchParams.get('template');
+    if (!raw || session.loading) return;
+    setSearchParams({}, { replace: true });
+    const templateId = Number(raw);
+    if (Number.isInteger(templateId) && templateId > 0) void loadTemplate(templateId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, session.loading]);
+
+  const saveAsTemplate = async () => {
+    const name = templateName.trim();
+    if (!name) return;
+    setSavingTemplate(true);
+    setTemplateError(null);
+
+    const seen = new Set<number>();
+    const items: TemplateInput['items'] = [];
+    for (const draft of drafts) {
+      if (seen.has(draft.exerciseId)) continue;
+      seen.add(draft.exerciseId);
+      const first = draft.sets[0];
+      items.push({
+        exerciseId: draft.exerciseId,
+        seriesCount: draft.type === 'weights' ? Math.max(draft.sets.length, 1) : null,
+        defaultWeightKg: draft.type === 'weights' ? (first?.weightKg ?? null) : null,
+        defaultReps: draft.type === 'weights' ? (first?.reps ?? null) : null,
+        durationMin: draft.type === 'cardio' ? parseNullableNumber(draft.duration) : null,
+        distanceKm: draft.type === 'cardio' ? parseNullableNumber(draft.distance) : null,
+      });
+    }
+
+    try {
+      await createTemplate(handle, user!.id, { name, notes: notes.trim() || null, items });
+      setSaveTemplateOpen(false);
+      setTemplateName('');
+      setSuccess('Plantilla guardada.');
+      templates.reload();
+    } catch (cause) {
+      setTemplateError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSavingTemplate(false);
+    }
   };
 
   const updateDraft = (key: string, patch: Partial<Draft>) => {
@@ -283,6 +373,20 @@ export function SessionPage() {
         <button className="btn" onClick={() => setPickerOpen(true)}>
           <IconPlus /> Añadir ejercicio
         </button>
+        <button className="btn" onClick={() => setTemplatePickerOpen(true)} disabled={templates.loading}>
+          <IconTemplate /> Cargar plantilla
+        </button>
+        <button
+          className="btn btn-ghost"
+          onClick={() => {
+            setTemplateError(null);
+            setSaveTemplateOpen(true);
+          }}
+          disabled={drafts.length === 0}
+          title={drafts.length === 0 ? 'Añade ejercicios primero' : undefined}
+        >
+          Guardar como plantilla
+        </button>
         <button className="btn btn-primary" onClick={save} disabled={saving}>
           {saving ? 'Guardando…' : 'Guardar sesión'}
         </button>
@@ -297,6 +401,74 @@ export function SessionPage() {
           onPick={addExercise}
           onClose={() => setPickerOpen(false)}
         />
+      ) : null}
+
+      {templatePickerOpen ? (
+        <TemplatePicker
+          templates={templates.data ?? []}
+          onPick={(templateId) => void loadTemplate(templateId)}
+          onClose={() => setTemplatePickerOpen(false)}
+        />
+      ) : null}
+
+      {saveTemplateOpen ? (
+        <div className="overlay" onClick={() => setSaveTemplateOpen(false)}>
+          <div
+            className="modal"
+            style={{ width: 'min(460px, 92vw)' }}
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="modal-head">
+              <h2>Guardar como plantilla</h2>
+              <button
+                className="btn btn-ghost btn-icon"
+                onClick={() => setSaveTemplateOpen(false)}
+                aria-label="Cerrar"
+              >
+                <IconX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="field">
+                <label htmlFor="template-name-session">Nombre de la plantilla</label>
+                <input
+                  id="template-name-session"
+                  className="input"
+                  placeholder="Día de empuje, Pierna, Full body…"
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') void saveAsTemplate();
+                  }}
+                  autoFocus
+                />
+              </div>
+              <p className="dim small" style={{ marginTop: 8 }}>
+                Se guardan los {drafts.length} ejercicios de esta sesión con su número de series. Al
+                aplicarla se prellenan con tu último registro.
+              </p>
+              {templateError ? (
+                <div className="alert" style={{ marginTop: 12 }}>
+                  {templateError}
+                </div>
+              ) : null}
+              <div className="row" style={{ marginTop: 16, gap: 8, justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setSaveTemplateOpen(false)}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => void saveAsTemplate()}
+                  disabled={savingTemplate || templateName.trim().length < 2}
+                >
+                  {savingTemplate ? 'Guardando…' : 'Guardar plantilla'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {drawer ? <LibraryDrawer exercise={drawer} onClose={() => setDrawer(null)} /> : null}

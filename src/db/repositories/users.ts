@@ -2,7 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import type { DbHandle } from '..';
 import type { UserSummary } from '../../shared/types';
 import { hashPassword, verifyPassword } from '../../auth/password';
-import { exerciseLogs, exercises, series, sessions, users } from '../schema';
+import { exerciseLogs, exercises, series, sessions, templateItems, templates, users } from '../schema';
 import { AuthError, ConflictError, NotFoundError, ValidationError } from './errors';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,6 +111,21 @@ export async function deleteUser(h: DbHandle, userId: number): Promise<void> {
     }
     await h.db.delete(exerciseLogs).where(inArray(exerciseLogs.sessionId, sessionIds));
     await h.db.delete(sessions).where(inArray(sessions.id, sessionIds));
+  }
+
+  // Las plantillas referencian ejercicios: se borran antes que ellos.
+  const templateRows = await h.db
+    .select({ id: templates.id })
+    .from(templates)
+    .where(eq(templates.userId, userId));
+  if (templateRows.length > 0) {
+    await h.db.delete(templateItems).where(
+      inArray(
+        templateItems.templateId,
+        templateRows.map((row) => row.id),
+      ),
+    );
+    await h.db.delete(templates).where(eq(templates.userId, userId));
   }
 
   await h.db.delete(exercises).where(eq(exercises.userId, userId));

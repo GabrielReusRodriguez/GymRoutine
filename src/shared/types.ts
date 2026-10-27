@@ -63,6 +63,69 @@ export interface ExerciseInput {
   libraryId?: string | null;
 }
 
+/** Item de plantilla tal como lo edita la UI. */
+export interface TemplateItemInput {
+  exerciseId: number;
+  /** Solo pesas: filas de series a precrear. */
+  seriesCount: number | null;
+  /** Solo pesas: valores de reserva si el ejercicio no tiene historial. */
+  defaultWeightKg: number | null;
+  defaultReps: number | null;
+  /** Solo cardio. */
+  durationMin: number | null;
+  distanceKm: number | null;
+}
+
+export interface TemplateInput {
+  name: string;
+  notes: string | null;
+  items: TemplateItemInput[];
+}
+
+export interface TemplateItemDetail extends TemplateItemInput {
+  id: number;
+  order: number;
+  exerciseName: string;
+  exerciseType: ExerciseType;
+  libraryId: string | null;
+  /** `false` si el ejercicio se borró del catálogo y el item ya no es aplicable. */
+  available: boolean;
+}
+
+export interface TemplateSummary {
+  id: number;
+  name: string;
+  notes: string | null;
+  itemCount: number;
+  createdAt: string;
+}
+
+export interface TemplateDetail {
+  id: number;
+  name: string;
+  notes: string | null;
+  items: TemplateItemDetail[];
+}
+
+/** Ejercicio de una plantilla ya resuelto con el prellenado del último registro. */
+export interface TemplateItemPrefill {
+  exerciseId: number;
+  name: string;
+  type: ExerciseType;
+  libraryId: string | null;
+  durationMin: number | null;
+  distanceKm: number | null;
+  sets: SetEntry[];
+}
+
+export interface TemplateApplication {
+  id: number;
+  name: string;
+  items: TemplateItemPrefill[];
+  /** Nombres de ejercicios que ya no existen en el catálogo. */
+  skipped: string[];
+}
+
 export interface UserSummary {
   id: number;
   email: string;
@@ -91,11 +154,28 @@ export interface BackupSession {
   logs: BackupLog[];
 }
 
+export interface BackupTemplateItem {
+  exercise: string;
+  seriesCount: number | null;
+  defaultWeightKg: number | null;
+  defaultReps: number | null;
+  durationMin: number | null;
+  distanceKm: number | null;
+}
+
+export interface BackupTemplate {
+  name: string;
+  notes: string | null;
+  items: BackupTemplateItem[];
+}
+
 export interface BackupFile {
   format: 'gym-tracker';
-  version: 1;
+  /** v1 no tenía plantillas; se acepta al importar. */
+  version: 1 | 2;
   exportedAt: string;
   user: { email: string; name: string };
   exercises: BackupExercise[];
   sessions: BackupSession[];
+  templates?: BackupTemplate[];
 }

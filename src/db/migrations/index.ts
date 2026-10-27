@@ -62,6 +62,33 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX series_log_idx ON series(exercise_log_id)`,
     ],
   },
+  {
+    version: 2,
+    statements: [
+      `CREATE TABLE templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )`,
+      `CREATE UNIQUE INDEX templates_user_name_unique ON templates(user_id, name)`,
+      `CREATE INDEX templates_user_idx ON templates(user_id)`,
+      `CREATE TABLE template_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+        exercise_id INTEGER NOT NULL REFERENCES exercises(id),
+        "order" INTEGER NOT NULL,
+        series_count INTEGER,
+        default_weight_kg REAL,
+        default_reps INTEGER,
+        duration_min REAL,
+        distance_km REAL
+      )`,
+      `CREATE INDEX template_items_template_idx ON template_items(template_id)`,
+      `CREATE INDEX template_items_exercise_idx ON template_items(exercise_id)`,
+    ],
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;

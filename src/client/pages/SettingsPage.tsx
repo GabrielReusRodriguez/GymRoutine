@@ -54,12 +54,14 @@ export function SettingsPage() {
       const backup = parseBackup(raw);
 
       const confirmed = window.confirm(
-        `Se reemplazarán TODOS los datos de ${user!.name} por los de la copia (${backup.sessions.length} sesiones). Esta acción no se puede deshacer. ¿Continuar?`,
+        `Se reemplazarán TODOS los datos de ${user!.name} por los de la copia (${backup.sessions.length} sesiones, ${backup.templates?.length ?? 0} plantillas). Esta acción no se puede deshacer. ¿Continuar?`,
       );
       if (!confirmed) return;
 
       await importUserData(handle, user!.id, backup);
-      setDataMessage(`Importadas ${backup.sessions.length} sesiones. Recargando…`);
+      setDataMessage(
+        `Importadas ${backup.sessions.length} sesiones y ${backup.templates?.length ?? 0} plantillas. Recargando…`,
+      );
       window.setTimeout(() => window.location.reload(), 900);
     } catch (cause) {
       setDataError(cause instanceof Error ? cause.message : String(cause));

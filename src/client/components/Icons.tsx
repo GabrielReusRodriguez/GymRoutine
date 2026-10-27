@@ -49,6 +49,14 @@ export const IconLibrary = (p: IconProps) => (
   </Base>
 );
 
+export const IconTemplate = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M8 3h9a2 2 0 0 1 2 2v11" />
+    <rect x={4} y={7} width={12} height={14} rx={2.5} />
+    <path d="M7.5 12h5M7.5 16h3" />
+  </Base>
+);
+
 export const IconStats = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 20h16" />

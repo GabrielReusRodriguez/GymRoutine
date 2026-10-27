@@ -9,6 +9,7 @@ import { CatalogPage } from './client/pages/CatalogPage';
 import { LibraryPage } from './client/pages/LibraryPage';
 import { StatsPage } from './client/pages/StatsPage';
 import { SettingsPage } from './client/pages/SettingsPage';
+import { TemplatesPage } from './client/pages/TemplatesPage';
 
 export function App() {
   const { status, error, retry } = useDb();
@@ -81,6 +82,7 @@ export function App() {
         <Route index element={<Navigate to="/session" replace />} />
         <Route path="session" element={<SessionPage />} />
         <Route path="session/:date" element={<SessionPage />} />
+        <Route path="templates" element={<TemplatesPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="catalog" element={<CatalogPage />} />

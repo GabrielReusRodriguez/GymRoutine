@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { DbHandle } from '..';
 import type { Exercise } from '../schema';
-import { exerciseLogs, exercises } from '../schema';
+import { exerciseLogs, exercises, templateItems } from '../schema';
 import type { ExerciseInput } from '../../shared/types';
 import { MUSCLES } from '../../library/types';
 import { NotFoundError, ValidationError } from './errors';
@@ -159,7 +159,17 @@ export async function deleteExercise(
     .where(eq(exerciseLogs.exerciseId, exerciseId))
     .limit(1);
 
-  if (used.length > 0) {
+  // Una plantilla que lo referencia también cuenta como uso: se oculta, no se borra.
+  const inTemplate =
+    used.length > 0
+      ? used
+      : await h.db
+          .select({ id: templateItems.id })
+          .from(templateItems)
+          .where(eq(templateItems.exerciseId, exerciseId))
+          .limit(1);
+
+  if (inTemplate.length > 0) {
     await h.db.update(exercises).set({ hidden: true }).where(eq(exercises.id, exerciseId));
     return 'hidden';
   }

@@ -2,9 +2,10 @@ import { eq, inArray, isNull, or } from 'drizzle-orm';
 import { withTransaction, type DbHandle } from '..';
 import { normalize } from '../../library';
 import type { BackupFile, SessionInput } from '../../shared/types';
-import { exerciseLogs, exercises, series, sessions } from '../schema';
+import { exerciseLogs, exercises, series, sessions, templateItems, templates } from '../schema';
 import { NotFoundError } from './errors';
 import { validateSessionInput, listSessionDetails, writeSession } from './sessions';
+import { getTemplate, listTemplates, writeTemplate } from './templates';
 import { getUser } from './users';
 
 /** Exporta todos los datos del perfil activo (Spec §10). */
@@ -13,9 +14,14 @@ export async function exportUserData(h: DbHandle, userId: number): Promise<Backu
   if (!user) throw new NotFoundError('Usuario no encontrado.');
 
   const details = await listSessionDetails(h, userId);
-  const usedExerciseIds = new Set(
-    details.flatMap((session) => session.logs.map((log) => log.exerciseId)),
+  const templateDetails = await Promise.all(
+    (await listTemplates(h, userId)).map((summary) => getTemplate(h, userId, summary.id)),
   );
+
+  const usedExerciseIds = new Set([
+    ...details.flatMap((session) => session.logs.map((log) => log.exerciseId)),
+    ...templateDetails.flatMap((template) => template.items.map((item) => item.exerciseId)),
+  ]);
 
   const usedRows =
     usedExerciseIds.size > 0
@@ -28,7 +34,7 @@ export async function exportUserData(h: DbHandle, userId: number): Promise<Backu
 
   return {
     format: 'gym-tracker',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     user: { email: user.email, name: user.name },
     exercises: [...byId.values()].map((row) => ({
@@ -46,6 +52,18 @@ export async function exportUserData(h: DbHandle, userId: number): Promise<Backu
         durationMin: log.durationMin,
         distanceKm: log.distanceKm,
         sets: log.sets.map((set) => ({ weightKg: set.weightKg, reps: set.reps })),
+      })),
+    })),
+    templates: templateDetails.map((template) => ({
+      name: template.name,
+      notes: template.notes,
+      items: template.items.map((item) => ({
+        exercise: item.exerciseName,
+        seriesCount: item.seriesCount,
+        defaultWeightKg: item.defaultWeightKg,
+        defaultReps: item.defaultReps,
+        durationMin: item.durationMin,
+        distanceKm: item.distanceKm,
       })),
     })),
   };
@@ -84,7 +102,21 @@ export async function importUserData(
       await h.db.delete(sessions).where(inArray(sessions.id, sessionIds));
     }
 
-    // 2. Vaciar ejercicios propios y reconstruir el mapa de nombres
+    // 2. Vaciar plantillas y ejercicios propios; luego reconstruir el mapa de nombres
+    const templateRows = await h.db
+      .select({ id: templates.id })
+      .from(templates)
+      .where(eq(templates.userId, userId));
+    if (templateRows.length > 0) {
+      await h.db.delete(templateItems).where(
+        inArray(
+          templateItems.templateId,
+          templateRows.map((row) => row.id),
+        ),
+      );
+      await h.db.delete(templates).where(eq(templates.userId, userId));
+    }
+
     await h.db.delete(exercises).where(eq(exercises.userId, userId));
 
     const allRows = await h.db
@@ -137,6 +169,28 @@ export async function importUserData(
       };
       await validateSessionInput(h, userId, input);
       await writeSession(h, userId, input);
+    }
+
+    // 4. Insertar plantillas (los ejercicios ya existen por nombre)
+    for (const template of backup.templates ?? []) {
+      await writeTemplate(h, userId, {
+        name: template.name,
+        notes: template.notes,
+        items: template.items.map((item) => {
+          const exerciseId = idByName.get(normalize(item.exercise));
+          if (!exerciseId) {
+            throw new Error(`La copia referencia un ejercicio desconocido: ${item.exercise}`);
+          }
+          return {
+            exerciseId,
+            seriesCount: item.seriesCount,
+            defaultWeightKg: item.defaultWeightKg,
+            defaultReps: item.defaultReps,
+            durationMin: item.durationMin,
+            distanceKm: item.distanceKm,
+          };
+        }),
+      });
     }
   });
 }

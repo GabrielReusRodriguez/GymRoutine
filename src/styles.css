@@ -1017,16 +1017,24 @@ textarea {
   .nav {
     flex-direction: row;
     width: 100%;
-    justify-content: space-between;
+    gap: 0;
   }
 
+  /* 7 destinos: el texto debe caber en ~49px por item a 360px de ancho. */
   .nav-link {
     flex-direction: column;
-    gap: 3px;
-    font-size: 0.66rem;
-    padding: 7px 6px;
-    flex: 1;
+    gap: 2px;
+    font-size: 0.58rem;
+    letter-spacing: -0.01em;
+    padding: 6px 2px;
+    flex: 1 1 0;
+    min-width: 0;
     text-align: center;
+  }
+
+  .nav-icon {
+    width: 17px;
+    height: 17px;
   }
 
   .main {

@@ -1,4 +1,11 @@
-import type { BackupExercise, BackupFile, BackupLog, BackupSession } from './types';
+import type {
+  BackupExercise,
+  BackupFile,
+  BackupLog,
+  BackupSession,
+  BackupTemplate,
+  BackupTemplateItem,
+} from './types';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -65,6 +72,36 @@ function parseSession(value: unknown, index: number): BackupSession {
   };
 }
 
+function parseTemplateItem(value: unknown, index: number, template: string): BackupTemplateItem {
+  if (!isObject(value)) fail(`item #${index + 1} de la plantilla "${template}" no es un objeto`);
+  const { exercise, seriesCount, defaultWeightKg, defaultReps, durationMin, distanceKm } =
+    value as Record<string, unknown>;
+  if (typeof exercise !== 'string' || exercise.trim() === '') {
+    fail(`item #${index + 1} de la plantilla "${template}" sin ejercicio`);
+  }
+  return {
+    exercise: exercise.trim(),
+    seriesCount: isNumberOrNull(seriesCount) ? seriesCount : null,
+    defaultWeightKg: isNumberOrNull(defaultWeightKg) ? defaultWeightKg : null,
+    defaultReps: isNumberOrNull(defaultReps) ? defaultReps : null,
+    durationMin: isNumberOrNull(durationMin) ? durationMin : null,
+    distanceKm: isNumberOrNull(distanceKm) ? distanceKm : null,
+  };
+}
+
+function parseTemplate(value: unknown, index: number): BackupTemplate {
+  if (!isObject(value)) fail(`plantilla #${index + 1} no es un objeto`);
+  const { name, notes, items } = value as Record<string, unknown>;
+  if (typeof name !== 'string' || name.trim() === '') fail(`plantilla #${index + 1} sin nombre`);
+  if (!Array.isArray(items)) fail(`plantilla "${name}" sin ejercicios`);
+  const trimmed = name.trim();
+  return {
+    name: trimmed,
+    notes: typeof notes === 'string' ? notes : null,
+    items: items.map((item, itemIndex) => parseTemplateItem(item, itemIndex, trimmed)),
+  };
+}
+
 /** Valida y tipa un JSON de copia de seguridad. Lanza Error con mensaje legible. */
 export function parseBackup(raw: string): BackupFile {
   let data: unknown;
@@ -75,16 +112,19 @@ export function parseBackup(raw: string): BackupFile {
   }
   if (!isObject(data)) fail('el contenido no es un objeto');
   if (data.format !== 'gym-tracker') fail('no es un archivo de Gym Tracker');
-  if (data.version !== 1) {
+  if (data.version !== 1 && data.version !== 2) {
     fail(`versión no soportada (${String(data.version)})`);
   }
   if (!Array.isArray(data.exercises)) fail('falta la lista de ejercicios');
   if (!Array.isArray(data.sessions)) fail('falta la lista de sesiones');
   if (!isObject(data.user)) fail('falta el usuario');
+  if (data.templates !== undefined && !Array.isArray(data.templates)) {
+    fail('la lista de plantillas no es válida');
+  }
 
   return {
     format: 'gym-tracker',
-    version: 1,
+    version: data.version,
     exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : new Date().toISOString(),
     user: {
       email: typeof data.user.email === 'string' ? data.user.email : '',
@@ -92,6 +132,7 @@ export function parseBackup(raw: string): BackupFile {
     },
     exercises: data.exercises.map(parseExercise),
     sessions: data.sessions.map(parseSession),
+    templates: Array.isArray(data.templates) ? data.templates.map(parseTemplate) : [],
   };
 }
 
