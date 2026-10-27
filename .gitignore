@@ -1,0 +1,26 @@
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Wrangler / Cloudflare
+.wrangler/
+.mf/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Python (herramientas de scripts)
+__pycache__/
+*.pyc
+
+# Editores
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
