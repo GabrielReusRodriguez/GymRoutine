@@ -13,7 +13,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # sqlite-wasm pide Node >= 22 (el proyecto se desarrolla con 18, que avisa EBADENGINE).
       - uses: actions/setup-node@v7
