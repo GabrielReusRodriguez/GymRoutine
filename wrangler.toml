@@ -1,0 +1,11 @@
+name = "gym-tracker"
+main = "src/worker/index.ts"
+compatibility_date = "2025-01-01"
+
+# La SPA compilada se sirve como assets estáticos. El worker solo atiende
+# /health y las rutas que no existan como fichero; el resto lo resuelve
+# Cloudflare desde ./dist/client (incluido el fallback a index.html).
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

@@ -24,3 +24,6 @@ __pycache__/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Binario generado por scripts/copy-sqlite-wasm.mjs
+public/sqlite3.wasm

@@ -1,0 +1,816 @@
+import type { LibraryExercise } from '../types';
+
+/**
+ * Biblioteca embebida de ejercicios de fuerza.
+ * Contenido de solo lectura: se compila dentro del bundle y no se escribe
+ * en la base de datos (Spec §6).
+ */
+export const STRENGTH_LIBRARY: LibraryExercise[] = [
+  // ── Empuje horizontal ────────────────────────────────────────────────
+  {
+    id: 'barbell-bench-press',
+    name: 'Press banca con barra',
+    aliases: ['press banca', 'bench press', 'banca plana', 'press de banca'],
+    pattern: 'push',
+    equipment: 'barbell',
+    description:
+      'Túmbate en el banco con los pies firmes en el suelo y las escápulas retraídas. Agarra la barra algo más ancho que los hombros, bájala controlada hasta rozar el esternón y empuja hasta extender los codos sin bloquear de golpe.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['triceps', 'deltoides-anterior'],
+    media: {
+      figure: 'bench-press',
+      tips: ['Muñecas alineadas sobre los codos', 'No rebotes la barra en el pecho', 'Mantén los glúteos en el banco'],
+    },
+  },
+  {
+    id: 'incline-barbell-bench-press',
+    name: 'Press banca inclinado con barra',
+    aliases: ['press inclinado', 'banca inclinada', 'incline bench press'],
+    pattern: 'push',
+    equipment: 'barbell',
+    description:
+      'Coloca el banco a 30-45°. Baja la barra hasta la parte alta del pecho manteniendo los codos ligeramente cerrados y empuja en línea con el hombro, sin arquear en exceso la espalda.',
+    primaryMuscles: ['pectorales', 'deltoides-anterior'],
+    secondaryMuscles: ['triceps'],
+    media: {
+      figure: 'incline-press',
+      tips: ['Evita inclinaciones mayores de 45°', 'Controla la bajada 2-3 segundos'],
+    },
+  },
+  {
+    id: 'dumbbell-bench-press',
+    name: 'Press banca con mancuernas',
+    aliases: ['press mancuernas', 'press plano mancuernas'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'Con una mancuerna en cada mano y las palmas hacia delante, baja hasta que los codos queden al nivel del torso y empuja juntando ligeramente las manos arriba sin chocarlas.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['triceps', 'deltoides-anterior'],
+    media: { figure: 'bench-press', tips: ['Mayor recorrido que con barra', 'No dejes caer los codos por debajo del banco'] },
+  },
+  {
+    id: 'incline-dumbbell-press',
+    name: 'Press inclinado con mancuernas',
+    aliases: ['press inclinado mancuernas'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'Banco a 30-45°, mancuernas a la altura del pecho alto. Empuja hacia arriba y ligeramente hacia dentro, manteniendo las escápulas retraídas durante todo el recorrido.',
+    primaryMuscles: ['pectorales', 'deltoides-anterior'],
+    secondaryMuscles: ['triceps'],
+    media: { figure: 'incline-press', tips: ['Sube y baja en el mismo arco', 'Codos a unos 45° del torso'] },
+  },
+  {
+    id: 'machine-chest-press',
+    name: 'Press de pecho en máquina',
+    aliases: ['press pecho máquina', 'chest press'],
+    pattern: 'push',
+    equipment: 'machine',
+    description:
+      'Ajusta el asiento para que las asas queden a la altura del pecho. Empuja hasta casi extender los codos y vuelve controlando el retorno sin soltar la tensión.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['triceps', 'deltoides-anterior'],
+    media: { figure: 'bench-press', tips: ['No encorves los hombros al empujar', 'Ajusta el recorrido a tu movilidad'] },
+  },
+  {
+    id: 'dumbbell-fly',
+    name: 'Aperturas con mancuernas',
+    aliases: ['aperturas', 'flyes', 'pec deck con mancuernas'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'Tumbado, con los codos semiflexionados y fijos, abre los brazos en arco hasta sentir el estiramiento del pecho y ciérralos como si abrazaras un tronco.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['deltoides-anterior'],
+    media: { figure: 'fly', tips: ['Codos ligeramente flexionados y quietos', 'No bajes más allá de lo que controlas'] },
+  },
+  {
+    id: 'cable-crossover',
+    name: 'Cruces en polea',
+    aliases: ['crossover', 'cruces polea', 'cable fly'],
+    pattern: 'push',
+    equipment: 'cable',
+    description:
+      'Con una polea alta en cada lado, lleva las manos en arco hacia delante y abajo hasta cruzarlas ligeramente frente al torso, y vuelve resistiendo la apertura.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['deltoides-anterior'],
+    media: { figure: 'fly', tips: ['Paso adelante para estabilidad', 'Codos fijos, el movimiento es de hombro'] },
+  },
+  {
+    id: 'push-up',
+    name: 'Flexiones',
+    aliases: ['push up', 'lagartijas', 'flexión'],
+    pattern: 'push',
+    equipment: 'bodyweight',
+    description:
+      'En plancha alta con manos algo más anchas que los hombros, baja el pecho casi hasta el suelo manteniendo el cuerpo en línea y empuja hasta extender los codos.',
+    primaryMuscles: ['pectorales'],
+    secondaryMuscles: ['triceps', 'deltoides-anterior', 'recto-abdominal'],
+    media: { figure: 'push-up', tips: ['Aprieta glúteos y abdomen', 'Codos a 45°, no en cruz'] },
+  },
+  {
+    id: 'chest-dip',
+    name: 'Fondos en paralelas',
+    aliases: ['dips', 'fondos', 'paralelas'],
+    pattern: 'push',
+    equipment: 'bodyweight',
+    description:
+      'Sujétate en las paralelas, inclina el torso hacia delante y baja hasta que los codos formen unos 90°; empuja hasta extender los brazos sin encoger los hombros.',
+    primaryMuscles: ['pectorales', 'triceps'],
+    secondaryMuscles: ['deltoides-anterior'],
+    media: { figure: 'dip', tips: ['Si molestan los hombros, limita la profundidad', 'Pecho alto, hombros abajo'] },
+  },
+  {
+    id: 'close-grip-bench-press',
+    name: 'Press banca agarre cerrado',
+    aliases: ['press cerrado', 'close grip bench'],
+    pattern: 'push',
+    equipment: 'barbell',
+    description:
+      'Con un agarre a la anchura de los hombros, baja la barra al esternón manteniendo los codos cerca del torso y empuja extendiendo los codos con fuerza.',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['pectorales', 'deltoides-anterior'],
+    media: { figure: 'bench-press', tips: ['No cierres tanto el agarre como para forzar las muñecas'] },
+  },
+
+  // ── Empuje vertical ──────────────────────────────────────────────────
+  {
+    id: 'barbell-overhead-press',
+    name: 'Press militar con barra',
+    aliases: ['press militar', 'overhead press', 'press hombro barra'],
+    pattern: 'push',
+    equipment: 'barbell',
+    description:
+      'De pie, con la barra a la altura de las clavículas y el abdomen apretado, empuja por encima de la cabeza apartando ligeramente la cabeza y baja controlando hasta el pecho.',
+    primaryMuscles: ['deltoides-anterior'],
+    secondaryMuscles: ['triceps', 'trapecio', 'recto-abdominal'],
+    media: { figure: 'overhead-press', tips: ['No arquees la lumbar', 'Barra en línea con el centro del pie'] },
+  },
+  {
+    id: 'seated-dumbbell-press',
+    name: 'Press de hombro sentado con mancuernas',
+    aliases: ['press hombro mancuernas', 'press sentado'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'Sentado con respaldo, mancuernas a la altura de las orejas y palmas al frente. Empuja hasta casi juntar las manos arriba y baja hasta que los codos queden a 90°.',
+    primaryMuscles: ['deltoides-anterior'],
+    secondaryMuscles: ['triceps', 'trapecio'],
+    media: { figure: 'overhead-press', tips: ['Espalda apoyada en el respaldo', 'No choques las mancuernas arriba'] },
+  },
+  {
+    id: 'arnold-press',
+    name: 'Press Arnold',
+    aliases: ['arnold press'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'Empieza con las mancuernas frente al pecho y las palmas hacia ti; al empujar rota las manos hacia fuera hasta terminar con las palmas al frente arriba, y deshaz la rotación al bajar.',
+    primaryMuscles: ['deltoides-anterior', 'deltoides-lateral'],
+    secondaryMuscles: ['triceps'],
+    media: { figure: 'overhead-press', tips: ['Rotación fluida, sin cargar el manguito rotador'] },
+  },
+  {
+    id: 'lateral-raise',
+    name: 'Elevaciones laterales',
+    aliases: ['laterales', 'lateral raise', 'elevación lateral'],
+    pattern: 'push',
+    equipment: 'dumbbell',
+    description:
+      'De pie con mancuernas a los lados y codos ligeramente flexionados, eleva los brazos hasta la altura de los hombros y baja controlando sin balancear el torso.',
+    primaryMuscles: ['deltoides-lateral'],
+    secondaryMuscles: ['trapecio', 'deltoides-anterior'],
+    media: { figure: 'lateral-raise', tips: ['Codos ligeramente por encima de las manos', 'Peso ligero, sin impulso'] },
+  },
+  {
+    id: 'cable-lateral-raise',
+    name: 'Elevaciones laterales en polea',
+    aliases: ['lateral polea', 'cable lateral raise'],
+    pattern: 'push',
+    equipment: 'cable',
+    description:
+      'Con la polea baja y el cable cruzado por delante, eleva el brazo lateralmente hasta la altura del hombro manteniendo tensión constante en el deltoides.',
+    primaryMuscles: ['deltoides-lateral'],
+    secondaryMuscles: ['trapecio'],
+    media: { figure: 'lateral-raise', tips: ['No rotes el torso', 'Controla la vuelta'] },
+  },
+  {
+    id: 'rear-delt-fly',
+    name: 'Pájaros / deltoides posterior',
+    aliases: ['pájaros', 'rear delt fly', 'deltoide posterior'],
+    pattern: 'pull',
+    equipment: 'dumbbell',
+    description:
+      'Inclinado con el torso casi paralelo al suelo y codos semiflexionados, abre los brazos hacia los lados hasta la altura de los hombros y baja sin dejar caer el pecho.',
+    primaryMuscles: ['deltoides-posterior'],
+    secondaryMuscles: ['trapecio', 'dorsal'],
+    media: { figure: 'lateral-raise', tips: ['Peso ligero, evita encoger el cuello', 'Aprieta las escápulas al final'] },
+  },
+  {
+    id: 'face-pull',
+    name: 'Face pull',
+    aliases: ['facepull', 'jalón a la cara'],
+    pattern: 'pull',
+    equipment: 'cable',
+    description:
+      'Con la polea a la altura de la cara y una cuerda, tira hacia la frente separando las manos y rotando los hombros hacia fuera; vuelve controlando.',
+    primaryMuscles: ['deltoides-posterior'],
+    secondaryMuscles: ['trapecio', 'dorsal'],
+    media: { figure: 'row', tips: ['Codos a la altura de los hombros', 'Piensa en abrir, no en tirar fuerte'] },
+  },
+  {
+    id: 'upright-row',
+    name: 'Remo al mentón',
+    aliases: ['upright row', 'remo vertical'],
+    pattern: 'pull',
+    equipment: 'barbell',
+    description:
+      'De pie con la barra frente a los muslos, tira de ella hacia el mentón guiando con los codos y sin subir los hombros más allá de lo cómodo; baja controlando.',
+    primaryMuscles: ['trapecio', 'deltoides-lateral'],
+    secondaryMuscles: ['biceps'],
+    media: { figure: 'row', tips: ['Agarre a la anchura de los hombros', 'Detente si molesta el hombro'] },
+  },
+
+  // ── Tríceps ──────────────────────────────────────────────────────────
+  {
+    id: 'triceps-pushdown',
+    name: 'Extensión de tríceps en polea',
+    aliases: ['pushdown', 'tríceps polea', 'jalón tríceps'],
+    pattern: 'push',
+    equipment: 'cable',
+    description:
+      'Con la polea alta y los codos pegados al torso, extiende los brazos hacia abajo hasta bloquear suavemente y vuelve sin mover los codos.',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: [],
+    media: { figure: 'triceps', tips: ['Codos fijos, solo se mueve el antebrazo', 'No te inclines para empujar'] },
+  },
+  {
+    id: 'overhead-triceps-extension',
+    name: 'Extensión de tríceps sobre la cabeza',
+    aliases: ['tríceps sobre cabeza', 'overhead extension', 'francés'],
+    pattern: 'push',
+    equipment: 'cable',
+    description:
+      'De espaldas a la polea, con los codos altos y apuntando al frente, extiende los brazos por encima de la cabeza y vuelve hasta sentir el estiramiento del tríceps.',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: [],
+    media: { figure: 'triceps', tips: ['Codos cerca de la cabeza', 'Recorrido completo y controlado'] },
+  },
+  {
+    id: 'skull-crusher',
+    name: 'Extensión de tríceps tumbado (skull crusher)',
+    aliases: ['skull crusher', 'rompecráneos', 'press francés', 'tríceps tumbado'],
+    pattern: 'push',
+    equipment: 'barbell',
+    description:
+      'Tumbado con la barra sobre el pecho y los brazos verticales, flexiona solo los codos para bajar la barra hacia la frente y extiende de nuevo sin mover los hombros.',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: [],
+    media: { figure: 'skull-crusher', tips: ['Codos apuntando al techo', 'Baja hasta donde controles'] },
+  },
+  {
+    id: 'bench-dip',
+    name: 'Fondos en banco',
+    aliases: ['bench dip', 'fondos tríceps'],
+    pattern: 'push',
+    equipment: 'bodyweight',
+    description:
+      'Con las manos en el borde del banco y los pies adelante, baja el cuerpo flexionando los codos hasta unos 90° y empuja hasta extender los brazos.',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['pectorales', 'deltoides-anterior'],
+    media: { figure: 'dip', tips: ['Codos hacia atrás, no hacia fuera', 'No dejes caer los hombros'] },
+  },
+
+  // ── Tracción vertical ────────────────────────────────────────────────
+  {
+    id: 'pull-up',
+    name: 'Dominadas',
+    aliases: ['pull up', 'dominadas pronas'],
+    pattern: 'pull',
+    equipment: 'bodyweight',
+    description:
+      'Colgado con agarre prono algo más ancho que los hombros, tira de los codos hacia las costillas hasta pasar la barbilla por la barra y baja controlando hasta extender los brazos.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['biceps', 'trapecio', 'deltoides-posterior'],
+    media: { figure: 'pull-up', tips: ['Inicia bajando las escápulas', 'Sin balanceo'] },
+  },
+  {
+    id: 'chin-up',
+    name: 'Dominadas supinas',
+    aliases: ['chin up', 'dominadas supinadas'],
+    pattern: 'pull',
+    equipment: 'bodyweight',
+    description:
+      'Con agarre supino a la anchura de los hombros, sube hasta que la barbilla pase la barra manteniendo el pecho alto y baja hasta la extensión completa.',
+    primaryMuscles: ['dorsal', 'biceps'],
+    secondaryMuscles: ['trapecio'],
+    media: { figure: 'pull-up', tips: ['Agarre firme, evita colgarte de los dedos'] },
+  },
+  {
+    id: 'lat-pulldown',
+    name: 'Jalón al pecho',
+    aliases: ['jalón', 'lat pulldown', 'polea al pecho'],
+    pattern: 'pull',
+    equipment: 'machine',
+    description:
+      'Sentado con los muslos fijados, tira de la barra hacia la parte alta del pecho llevando los codos abajo y atrás; vuelve controlando sin perder la postura.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['biceps', 'trapecio'],
+    media: { figure: 'pulldown', tips: ['No eches el torso muy atrás', 'Barra a la clavícula, no a la nuca'] },
+  },
+  {
+    id: 'straight-arm-pulldown',
+    name: 'Jalón con brazos rectos',
+    aliases: ['straight arm pulldown', 'pullover polea'],
+    pattern: 'pull',
+    equipment: 'cable',
+    description:
+      'Con la polea alta y los brazos casi extendidos, lleva la barra en arco hasta los muslos sintiendo el dorsal y vuelve sin flexionar los codos.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['triceps', 'recto-abdominal'],
+    media: { figure: 'pulldown', tips: ['Codos casi rectos', 'Pecho alto durante todo el recorrido'] },
+  },
+
+  // ── Tracción horizontal ──────────────────────────────────────────────
+  {
+    id: 'barbell-row',
+    name: 'Remo con barra',
+    aliases: ['remo barra', 'barbell row', 'remo inclinado'],
+    pattern: 'pull',
+    equipment: 'barbell',
+    description:
+      'Con el torso inclinado unos 45° y la espalda neutra, tira de la barra hacia el abdomen bajo guiando con los codos y baja controlando sin redondear la espalda.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['trapecio', 'biceps', 'deltoides-posterior', 'erectores'],
+    media: { figure: 'row', tips: ['Cuello en línea con la columna', 'Sin tirones de cadera'] },
+  },
+  {
+    id: 'dumbbell-row',
+    name: 'Remo con mancuerna a una mano',
+    aliases: ['remo mancuerna', 'dumbbell row', 'remo unilateral'],
+    pattern: 'pull',
+    equipment: 'dumbbell',
+    description:
+      'Apoya una mano y una rodilla en el banco, con la espalda plana; tira de la mancuerna hacia la cadera llevando el codo atrás y baja hasta estirar el brazo.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['biceps', 'trapecio', 'deltoides-posterior'],
+    media: { figure: 'row', tips: ['No rotes el torso para subir más', 'Escápula hacia atrás al final'] },
+  },
+  {
+    id: 'seated-cable-row',
+    name: 'Remo en polea baja',
+    aliases: ['remo polea', 'seated row', 'remo sentado'],
+    pattern: 'pull',
+    equipment: 'cable',
+    description:
+      'Sentado con las piernas semiflexionadas y el torso estable, tira del maneral hacia el abdomen juntando las escápulas y vuelve dejando que los brazos se extiendan.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['biceps', 'trapecio', 'deltoides-posterior'],
+    media: { figure: 'row', tips: ['Torso quieto, sin balanceo', 'Codos cerca del cuerpo'] },
+  },
+  {
+    id: 't-bar-row',
+    name: 'Remo en T',
+    aliases: ['t bar row', 'remo t'],
+    pattern: 'pull',
+    equipment: 'barbell',
+    description:
+      'Con el torso inclinado y la barra entre las piernas, tira hacia el pecho manteniendo la espalda neutra y baja controlando hasta estirar los brazos.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['trapecio', 'biceps', 'deltoides-posterior'],
+    media: { figure: 'row', tips: ['Agarre neutro si es posible', 'No uses impulso de piernas'] },
+  },
+  {
+    id: 'inverted-row',
+    name: 'Remo invertido',
+    aliases: ['inverted row', 'remo en barra baja'],
+    pattern: 'pull',
+    equipment: 'bodyweight',
+    description:
+      'Colgado bajo una barra a la altura de la cadera con el cuerpo recto, tira del pecho hacia la barra y baja controlando sin dejar caer la cadera.',
+    primaryMuscles: ['dorsal'],
+    secondaryMuscles: ['biceps', 'trapecio', 'recto-abdominal'],
+    media: { figure: 'row', tips: ['Cuerpo en línea, glúteos apretados', 'Ajusta la dificultad con el ángulo'] },
+  },
+
+  // ── Bíceps ───────────────────────────────────────────────────────────
+  {
+    id: 'barbell-curl',
+    name: 'Curl de bíceps con barra',
+    aliases: ['curl barra', 'barbell curl', 'curl bíceps'],
+    pattern: 'pull',
+    equipment: 'barbell',
+    description:
+      'De pie con la barra en pronación y los codos pegados al torso, flexiona los codos hasta la altura del pecho y baja controlando sin balancear el cuerpo.',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['antebrazo'],
+    media: { figure: 'curl', tips: ['Codos quietos', 'Sin impulso lumbar'] },
+  },
+  {
+    id: 'dumbbell-curl',
+    name: 'Curl de bíceps con mancuernas',
+    aliases: ['curl mancuernas', 'dumbbell curl'],
+    pattern: 'pull',
+    equipment: 'dumbbell',
+    description:
+      'Con una mancuerna en cada mano y las palmas al frente, flexiona los codos alternando o a la vez, manteniendo los hombros quietos y bajando lento.',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['antebrazo'],
+    media: { figure: 'curl', tips: ['Supina la muñeca al subir', 'Controla la bajada 2 segundos'] },
+  },
+  {
+    id: 'hammer-curl',
+    name: 'Curl martillo',
+    aliases: ['hammer curl', 'curl neutro'],
+    pattern: 'pull',
+    equipment: 'dumbbell',
+    description:
+      'Con las palmas enfrentadas (agarre neutro), flexiona los codos manteniendo esa orientación durante todo el recorrido y baja controlando.',
+    primaryMuscles: ['biceps', 'antebrazo'],
+    secondaryMuscles: [],
+    media: { figure: 'curl', tips: ['Trabaja braquial y antebrazo', 'No balances el torso'] },
+  },
+  {
+    id: 'preacher-curl',
+    name: 'Curl en banco Scott',
+    aliases: ['curl scott', 'preacher curl', 'curl predicador'],
+    pattern: 'pull',
+    equipment: 'barbell',
+    description:
+      'Con los brazos apoyados en el banco inclinado, flexiona los codos hasta arriba y baja hasta casi extender el brazo manteniendo el hombro fijo.',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['antebrazo'],
+    media: { figure: 'curl', tips: ['No extiendas el codo del todo bajo carga', 'Cuello relajado'] },
+  },
+  {
+    id: 'cable-curl',
+    name: 'Curl de bíceps en polea',
+    aliases: ['curl polea', 'cable curl'],
+    pattern: 'pull',
+    equipment: 'cable',
+    description:
+      'Con la polea baja y los codos junto al torso, flexiona hasta la altura del pecho manteniendo tensión constante y vuelve controlando.',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['antebrazo'],
+    media: { figure: 'curl', tips: ['Tensión continua en todo el recorrido'] },
+  },
+
+  // ── Trapecio y carga ─────────────────────────────────────────────────
+  {
+    id: 'barbell-shrug',
+    name: 'Encogimientos con barra',
+    aliases: ['shrug', 'encogimientos', 'trapecio barra'],
+    pattern: 'carry',
+    equipment: 'barbell',
+    description:
+      'De pie con la barra frente a los muslos, sube los hombros hacia las orejas sin doblar los codos y baja controlando hasta la posición inicial.',
+    primaryMuscles: ['trapecio'],
+    secondaryMuscles: ['antebrazo'],
+    media: { figure: 'shrug', tips: ['No rotes los hombros', 'Pausa arriba un segundo'] },
+  },
+  {
+    id: 'farmer-carry',
+    name: 'Paseo del granjero',
+    aliases: ['farmer carry', 'farmer walk', 'paseo granjero'],
+    pattern: 'carry',
+    equipment: 'dumbbell',
+    description:
+      'Camina con una mancuerna pesada en cada mano, el torso erguido y los hombros atrás, dando pasos cortos y controlados durante la distancia o el tiempo objetivo.',
+    primaryMuscles: ['antebrazo', 'trapecio'],
+    secondaryMuscles: ['recto-abdominal', 'oblicuos', 'gluteo'],
+    media: { figure: 'carry', tips: ['No te inclines hacia los lados', 'Respira de forma constante'] },
+  },
+  {
+    id: 'suitcase-carry',
+    name: 'Paseo con una mancuerna (maleta)',
+    aliases: ['suitcase carry', 'paseo maleta', 'carry unilateral'],
+    pattern: 'carry',
+    equipment: 'dumbbell',
+    description:
+      'Camina con una sola mancuerna pesada en una mano, resistiendo la inclinación lateral del torso y manteniendo los hombros nivelados.',
+    primaryMuscles: ['oblicuos', 'antebrazo'],
+    secondaryMuscles: ['trapecio', 'gluteo'],
+    media: { figure: 'carry', tips: ['Core firme, sin ladear la cadera', 'Cambia de lado en la siguiente serie'] },
+  },
+
+  // ── Sentadilla y piernas ─────────────────────────────────────────────
+  {
+    id: 'back-squat',
+    name: 'Sentadilla trasera',
+    aliases: ['sentadilla', 'back squat', 'squat barra'],
+    pattern: 'squat',
+    equipment: 'barbell',
+    description:
+      'Con la barra sobre los trapecios, pies a la anchura de los hombros y puntas ligeramente fuera, desciende flexionando cadera y rodillas hasta que los muslos queden paralelos o algo más abajo, y sube empujando el suelo.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['isquios', 'erectores', 'aductores', 'recto-abdominal'],
+    media: { figure: 'squat', tips: ['Rodillas en línea con los pies', 'Espalda neutra', 'Talones pegados al suelo'] },
+  },
+  {
+    id: 'front-squat',
+    name: 'Sentadilla frontal',
+    aliases: ['front squat', 'sentadilla frontal'],
+    pattern: 'squat',
+    equipment: 'barbell',
+    description:
+      'Con la barra apoyada en los deltoides anteriores y los codos altos, desciende manteniendo el torso erguido y sube empujando con las piernas sin perder la posición de los codos.',
+    primaryMuscles: ['cuadriceps'],
+    secondaryMuscles: ['gluteo', 'recto-abdominal', 'erectores'],
+    media: { figure: 'squat', tips: ['Codos arriba durante todo el movimiento', 'Torso lo más vertical posible'] },
+  },
+  {
+    id: 'goblet-squat',
+    name: 'Sentadilla goblet',
+    aliases: ['goblet squat', 'sentadilla con mancuerna'],
+    pattern: 'squat',
+    equipment: 'dumbbell',
+    description:
+      'Sujeta una mancuerna o kettlebell contra el pecho, desciende entre las piernas con el torso erguido y sube empujando el suelo con los talones.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['aductores', 'recto-abdominal'],
+    media: { figure: 'squat', tips: ['Ideal para aprender el patrón', 'Rodillas hacia fuera'] },
+  },
+  {
+    id: 'leg-press',
+    name: 'Prensa de piernas',
+    aliases: ['prensa', 'leg press'],
+    pattern: 'squat',
+    equipment: 'machine',
+    description:
+      'Sentado en la prensa con los pies a la anchura de los hombros, baja la plataforma flexionando las rodillas hasta unos 90° y empuja sin bloquear las rodillas de golpe.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['isquios', 'aductores'],
+    media: { figure: 'leg-press', tips: ['No despegues la lumbar del respaldo', 'No bloquees las rodillas'] },
+  },
+  {
+    id: 'hack-squat',
+    name: 'Hack squat',
+    aliases: ['hack squat', 'sentadilla hack'],
+    pattern: 'squat',
+    equipment: 'machine',
+    description:
+      'Con la espalda apoyada en la máquina y los pies en la plataforma, desciende hasta que los muslos pasen la paralela y sube empujando con los talones.',
+    primaryMuscles: ['cuadriceps'],
+    secondaryMuscles: ['gluteo', 'aductores'],
+    media: { figure: 'leg-press', tips: ['Rodillas alineadas con los pies', 'Controla la bajada'] },
+  },
+  {
+    id: 'bulgarian-split-squat',
+    name: 'Sentadilla búlgara',
+    aliases: ['búlgara', 'bulgarian split squat', 'sentadilla búlgara'],
+    pattern: 'squat',
+    equipment: 'dumbbell',
+    description:
+      'Con el pie trasero apoyado en un banco y el delantero firme, desciende flexionando la rodilla delantera hasta que el muslo quede paralelo y sube sin perder el equilibrio.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['isquios', 'aductores'],
+    media: { figure: 'lunge', tips: ['Peso en la pierna delantera', 'Torso ligeramente inclinado'] },
+  },
+  {
+    id: 'walking-lunge',
+    name: 'Zancadas caminando',
+    aliases: ['zancadas', 'lunges', 'walking lunge'],
+    pattern: 'squat',
+    equipment: 'dumbbell',
+    description:
+      'Da un paso largo hacia delante y desciende hasta que ambas rodillas formen unos 90°, empuja con la pierna delantera para avanzar y repite con la otra.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['isquios', 'aductores', 'gemelo'],
+    media: { figure: 'lunge', tips: ['Rodilla delantera sobre el pie', 'Torso erguido'] },
+  },
+  {
+    id: 'step-up',
+    name: 'Subidas al cajón',
+    aliases: ['step up', 'subidas cajón', 'box step up'],
+    pattern: 'squat',
+    equipment: 'dumbbell',
+    description:
+      'Con una mancuerna en cada mano, sube a un cajón estable apoyando el pie completo y empuja con esa pierna hasta extender la cadera; baja controlando.',
+    primaryMuscles: ['cuadriceps', 'gluteo'],
+    secondaryMuscles: ['isquios', 'gemelo'],
+    media: { figure: 'lunge', tips: ['No impulses con la pierna de abajo', 'Cajón a la altura de la rodilla'] },
+  },
+  {
+    id: 'leg-extension',
+    name: 'Extensión de cuádriceps',
+    aliases: ['extensión cuádriceps', 'leg extension', 'cuádriceps máquina'],
+    pattern: 'squat',
+    equipment: 'machine',
+    description:
+      'Sentado en la máquina con el respaldo ajustado, extiende las rodillas hasta casi bloquear y baja controlando sin soltar la almohadilla.',
+    primaryMuscles: ['cuadriceps'],
+    secondaryMuscles: [],
+    media: { figure: 'leg-extension', tips: ['Pausa arriba, bajada lenta', 'No uses impulso'] },
+  },
+  {
+    id: 'leg-curl',
+    name: 'Curl femoral',
+    aliases: ['curl femoral', 'leg curl', 'isquiotibiales máquina'],
+    pattern: 'hinge',
+    equipment: 'machine',
+    description:
+      'Tumbado o sentado en la máquina, flexiona las rodillas llevando el talón hacia el glúteo y vuelve controlando sin despegar la cadera del apoyo.',
+    primaryMuscles: ['isquios'],
+    secondaryMuscles: ['gemelo'],
+    media: { figure: 'leg-curl', tips: ['Cadera fija', 'No rebotes al final'] },
+  },
+  {
+    id: 'standing-calf-raise',
+    name: 'Elevación de gemelos de pie',
+    aliases: ['gemelos', 'calf raise', 'elevación talones'],
+    pattern: 'squat',
+    equipment: 'machine',
+    description:
+      'De pie con la punta de los pies en la plataforma y los talones libres, sube lo máximo posible sobre las puntas y baja hasta sentir el estiramiento.',
+    primaryMuscles: ['gemelo'],
+    secondaryMuscles: ['isquios'],
+    media: { figure: 'calf-raise', tips: ['Recorrido completo', 'Pausa arriba y abajo'] },
+  },
+
+  // ── Bisagra de cadera ────────────────────────────────────────────────
+  {
+    id: 'conventional-deadlift',
+    name: 'Peso muerto convencional',
+    aliases: ['peso muerto', 'deadlift', 'pm'],
+    pattern: 'hinge',
+    equipment: 'barbell',
+    description:
+      'Con la barra sobre la mitad del pie, agarra y empuja el suelo mientras extiendes cadera y rodillas a la vez, manteniendo la barra pegada a las piernas y la espalda neutra.',
+    primaryMuscles: ['erectores', 'gluteo'],
+    secondaryMuscles: ['isquios', 'trapecio', 'antebrazo', 'cuadriceps', 'dorsal'],
+    media: { figure: 'deadlift', tips: ['Barra pegada al cuerpo', 'No redondees la espalda', 'Cadera y hombros suben juntos'] },
+  },
+  {
+    id: 'romanian-deadlift',
+    name: 'Peso muerto rumano',
+    aliases: ['rumano', 'rdl', 'romanian deadlift', 'pm rumano'],
+    pattern: 'hinge',
+    equipment: 'barbell',
+    description:
+      'De pie con la barra en los muslos y las rodillas ligeramente flexionadas, lleva la cadera atrás bajando la barra por las piernas hasta sentir el estiramiento de los isquiotibiales y vuelve extendiendo la cadera.',
+    primaryMuscles: ['isquios', 'gluteo'],
+    secondaryMuscles: ['erectores', 'antebrazo', 'dorsal'],
+    media: { figure: 'rdl', tips: ['Movimiento de cadera, no de rodillas', 'Espalda neutra', 'Barra cerca de las piernas'] },
+  },
+  {
+    id: 'sumo-deadlift',
+    name: 'Peso muerto sumo',
+    aliases: ['sumo deadlift', 'peso muerto sumo'],
+    pattern: 'hinge',
+    equipment: 'barbell',
+    description:
+      'Con los pies muy abiertos y las puntas hacia fuera, agarra la barra dentro de las piernas y empuja el suelo abriendo las rodillas hasta extender la cadera.',
+    primaryMuscles: ['gluteo', 'cuadriceps', 'aductores'],
+    secondaryMuscles: ['erectores', 'isquios', 'trapecio'],
+    media: { figure: 'deadlift', tips: ['Rodillas hacia fuera', 'Torso más vertical que en convencional'] },
+  },
+  {
+    id: 'hip-thrust',
+    name: 'Hip thrust',
+    aliases: ['hip thrust', 'empuje de cadera', 'puente con barra'],
+    pattern: 'hinge',
+    equipment: 'barbell',
+    description:
+      'Con la espalda alta apoyada en un banco y la barra sobre la cadera, sube la pelvis hasta formar una línea con el torso y aprieta los glúteos antes de bajar.',
+    primaryMuscles: ['gluteo'],
+    secondaryMuscles: ['isquios', 'cuadriceps', 'recto-abdominal'],
+    media: { figure: 'hip-thrust', tips: ['Mentón al pecho', 'No hiperextiendas la lumbar', 'Pausa arriba'] },
+  },
+  {
+    id: 'glute-bridge',
+    name: 'Puente de glúteo',
+    aliases: ['glute bridge', 'puente glúteo'],
+    pattern: 'hinge',
+    equipment: 'bodyweight',
+    description:
+      'Tumbado con las rodillas flexionadas y los pies en el suelo, eleva la cadera apretando los glúteos hasta alinear rodillas, cadera y hombros, y baja controlando.',
+    primaryMuscles: ['gluteo'],
+    secondaryMuscles: ['isquios', 'recto-abdominal'],
+    media: { figure: 'hip-thrust', tips: ['Empuja con los talones', 'No arquees la espalda'] },
+  },
+  {
+    id: 'good-morning',
+    name: 'Buenos días',
+    aliases: ['good morning', 'buenos días'],
+    pattern: 'hinge',
+    equipment: 'barbell',
+    description:
+      'Con la barra en los trapecios y las rodillas ligeramente flexionadas, inclina el torso hacia delante llevando la cadera atrás y vuelve extendiendo la cadera sin redondear la espalda.',
+    primaryMuscles: ['isquios', 'erectores'],
+    secondaryMuscles: ['gluteo'],
+    media: { figure: 'good-morning', tips: ['Empieza con cargas muy ligeras', 'El movimiento es de cadera, no de columna'] },
+  },
+  {
+    id: 'kettlebell-swing',
+    name: 'Swing con kettlebell',
+    aliases: ['swing', 'kettlebell swing', 'balanceo kettlebell'],
+    pattern: 'hinge',
+    equipment: 'kettlebell',
+    description:
+      'Con la kettlebell entre las piernas, lleva la cadera atrás y proyecta la pesa hacia delante con un empuje explosivo de glúteos; el peso sube por inercia, no por los brazos.',
+    primaryMuscles: ['gluteo', 'isquios'],
+    secondaryMuscles: ['erectores', 'recto-abdominal', 'trapecio'],
+    media: { figure: 'swing', tips: ['Brazos relajados, como cuerdas', 'Aprieta glúteos en la cima'] },
+  },
+  {
+    id: 'back-extension',
+    name: 'Extensión lumbar',
+    aliases: ['hyperextension', 'extensión lumbar', 'back extension'],
+    pattern: 'hinge',
+    equipment: 'machine',
+    description:
+      'Con la cadera apoyada en el banco, baja el torso controlando y sube hasta alinear el cuerpo sin hiperextender la zona lumbar.',
+    primaryMuscles: ['erectores', 'gluteo'],
+    secondaryMuscles: ['isquios'],
+    media: { figure: 'good-morning', tips: ['Detente en la línea recta', 'Movimiento lento'] },
+  },
+
+  // ── Core ─────────────────────────────────────────────────────────────
+  {
+    id: 'plank',
+    name: 'Plancha',
+    aliases: ['plank', 'plancha abdominal'],
+    pattern: 'core',
+    equipment: 'bodyweight',
+    description:
+      'Apoya antebrazos y puntas de los pies con el cuerpo en línea recta, aprieta abdomen y glúteos y mantén la posición sin hundir la cadera.',
+    primaryMuscles: ['recto-abdominal'],
+    secondaryMuscles: ['oblicuos', 'gluteo', 'deltoides-anterior'],
+    media: { figure: 'plank', tips: ['Cuello neutro', 'No aguantes la respiración'] },
+  },
+  {
+    id: 'side-plank',
+    name: 'Plancha lateral',
+    aliases: ['side plank', 'plancha lateral'],
+    pattern: 'core',
+    equipment: 'bodyweight',
+    description:
+      'Apoyado sobre un antebrazo y el lateral del pie, eleva la cadera hasta alinear el cuerpo y mantén sin rotar el torso; cambia de lado.',
+    primaryMuscles: ['oblicuos'],
+    secondaryMuscles: ['recto-abdominal', 'gluteo', 'deltoides-lateral'],
+    media: { figure: 'side-plank', tips: ['Cadera alta', 'Hombro sobre el codo'] },
+  },
+  {
+    id: 'hanging-leg-raise',
+    name: 'Elevación de piernas colgado',
+    aliases: ['leg raise', 'elevación piernas', 'hanging leg raise'],
+    pattern: 'core',
+    equipment: 'bodyweight',
+    description:
+      'Colgado de una barra, eleva las piernas rectas o con rodillas flexionadas hasta la altura de la cadera y baja controlando sin balancearte.',
+    primaryMuscles: ['recto-abdominal'],
+    secondaryMuscles: ['oblicuos', 'antebrazo', 'dorsal'],
+    media: { figure: 'leg-raise', tips: ['Evita el balanceo', 'Sube con el abdomen, no con impulso'] },
+  },
+  {
+    id: 'cable-crunch',
+    name: 'Crunch en polea',
+    aliases: ['cable crunch', 'crunch polea'],
+    pattern: 'core',
+    equipment: 'cable',
+    description:
+      'Arrodillado frente a la polea alta con la cuerda junto a la cabeza, flexiona el torso llevando los codos hacia las rodillas y vuelve controlando.',
+    primaryMuscles: ['recto-abdominal'],
+    secondaryMuscles: ['oblicuos'],
+    media: { figure: 'crunch', tips: ['Cadera fija', 'Redondea la columna al flexionar'] },
+  },
+  {
+    id: 'ab-wheel',
+    name: 'Rueda abdominal',
+    aliases: ['ab wheel', 'rueda abdominal'],
+    pattern: 'core',
+    equipment: 'bodyweight',
+    description:
+      'Arrodillado con la rueda delante, extiéndela hacia delante manteniendo el abdomen firme y la espalda neutra, y vuelve tirando con el core.',
+    primaryMuscles: ['recto-abdominal'],
+    secondaryMuscles: ['oblicuos', 'dorsal', 'deltoides-anterior'],
+    media: { figure: 'plank', tips: ['No dejes caer la lumbar', 'Avanza solo hasta donde controles'] },
+  },
+  {
+    id: 'pallof-press',
+    name: 'Pallof press',
+    aliases: ['pallof', 'anti rotación polea'],
+    pattern: 'core',
+    equipment: 'cable',
+    description:
+      'De perfil a la polea con el maneral al pecho, extiende los brazos al frente resistiendo la rotación del torso y vuelve sin girar la cadera.',
+    primaryMuscles: ['oblicuos'],
+    secondaryMuscles: ['recto-abdominal', 'gluteo'],
+    media: { figure: 'rotation', tips: ['Resiste, no tires', 'Cadera y hombros alineados'] },
+  },
+  {
+    id: 'cable-woodchop',
+    name: 'Leñador en polea',
+    aliases: ['woodchop', 'leñador', 'rotación polea'],
+    pattern: 'core',
+    equipment: 'cable',
+    description:
+      'Con la polea alta a un lado, tira en diagonal hacia la cadera contraria rotando el torso con control y vuelve resistiendo la rotación inversa.',
+    primaryMuscles: ['oblicuos'],
+    secondaryMuscles: ['recto-abdominal', 'dorsal', 'gluteo'],
+    media: { figure: 'rotation', tips: ['La rotación nace del core, no de los brazos', 'Rodillas ligeramente flexionadas'] },
+  },
+];
+
+export const STRENGTH_BY_ID = new Map(STRENGTH_LIBRARY.map((e) => [e.id, e]));
