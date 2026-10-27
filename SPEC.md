@@ -88,6 +88,27 @@ series(
   weight_kg REAL NULL,
   reps INTEGER NULL
 );
+
+templates(
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                -- único por usuario
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, name)
+);
+
+template_items(
+  id INTEGER PRIMARY KEY,
+  template_id INTEGER NOT NULL REFERENCES templates(id) ON DELETE CASCADE,
+  exercise_id INTEGER NOT NULL REFERENCES exercises(id),
+  "order" INTEGER NOT NULL,
+  series_count INTEGER NULL,         -- solo pesas: filas a precrear
+  default_weight_kg REAL NULL,       -- solo pesas: reserva si no hay historial
+  default_reps INTEGER NULL,         -- solo pesas
+  duration_min REAL NULL,            -- solo cardio
+  distance_km REAL NULL              -- solo cardio
+);
 ```
 
 ### Invariantes (a nivel de repositorio, cubiertos por tests)
@@ -97,6 +118,7 @@ series(
 - Una sesión por `(user_id, date)`: si el usuario va dos veces el mismo día, edita la misma sesión.
 - Borrado de un ejercicio del catálogo global solo si ningún log lo usa; si está en uso, soft-hide.
 - `muscle_group` referencia el enum `Muscle` de la biblioteca (sección 6), no texto libre.
+- **Plantillas**: `series_count` solo en items de pesas (≥1) y `duration_min`/`distance_km` solo en items de cardio; un ejercicio no se repite dentro de la misma plantilla y el nombre es único por usuario. Aplicar una plantilla **no escribe en `sessions`**: solo rellena el borrador de la pantalla de sesión, así que la validación de logs sigue siendo la única puerta de guardado. Una plantilla que referencia un ejercicio cuenta como uso: ese ejercicio se oculta, no se borra.
 
 ---
 
@@ -180,11 +202,20 @@ El enum `Muscle` es el mismo vocabulario del campo `muscle_group` de `exercises`
    - Cardio: minutos + distancia opcional.
    - Pesas: filas de series (peso × reps) con botones añadir/quitar serie.
    - Icono ℹ️ por ejercicio → ficha de la biblioteca en drawer.
-3. **Histórico** — lista por fecha descendente, expandible, editar/borrar.
-4. **Catálogo** — CRUD de ejercicios propios; los globales no se borran (soft-hide).
-5. **Biblioteca** — buscador + detalle (sección 6).
-6. **Estadísticas** — véase sección 8.
-7. **Ajustes** — export/import JSON, cambiar password, borrar perfil.
+   - **Cargar plantilla** (modal con las plantillas del usuario) y **guardar como plantilla** (captura los ejercicios y series actuales).
+3. **Plantillas** — CRUD de plantillas de sesión: crear desde cero, editar, duplicar, reordenar items y borrar. Cada item guarda el número de series (pesas) o la duración/distancia (cardio) como preset. «Aplicar a hoy» navega a `/session?template=<id>`.
+4. **Histórico** — lista por fecha descendente, expandible, editar/borrar.
+5. **Catálogo** — CRUD de ejercicios propios; los globales no se borran (soft-hide).
+6. **Biblioteca** — buscador + detalle (sección 6).
+7. **Estadísticas** — véase sección 8.
+8. **Ajustes** — export/import JSON, cambiar password, borrar perfil.
+
+### 7.1 Comportamiento de las plantillas
+
+- **Aplicar** fusiona los items en el borrador de la sesión abierta (cualquier fecha), sin duplicar ejercicios ya presentes y sin perder lo ya escrito.
+- **Prellenado**: cada ejercicio de pesas toma las series de su último registro del usuario (serie 1..N; si hubo menos, repite la última); si no hay historial se usan los valores por defecto de la plantilla y, si tampoco, filas vacías. El cardio toma la última duración/distancia.
+- Un ejercicio borrado del catálogo se omite al aplicar y se informa al usuario.
+- Guardar la plantilla no requiere que la sesión sea válida: se puede plantillar un día a medio rellenar.
 
 ---
 
@@ -223,15 +254,14 @@ export default { fetch: app.fetch };
 
 ## 10. Export / import
 
-- **Export JSON**: descarga un archivo con toda la BD del perfil activo (ejercicios, sesiones, logs, series). Obligatorio y visible en Ajustes: es la única copia de seguridad posible al ser datos locales.
-- **Import JSON**: restaura datos, con resolución "reemplazar perfil" en v1 (sin merge).
+- **Export JSON**: descarga un archivo con toda la BD del perfil activo (ejercicios, sesiones, logs, series y plantillas). Obligatorio y visible en Ajustes: es la única copia de seguridad posible al ser datos locales.
+- **Import JSON**: restaura datos, con resolución "reemplazar perfil" en v1 (sin merge). Acepta `version: 1` (sin plantillas) y `version: 2`; los items de plantilla se resuelven por nombre de ejercicio, igual que los logs.
 
 ---
 
 ## 11. Fuera de alcance v1
 
 - Sincronización multi-dispositivo / servidor de datos (D1).
-- Rutinas y plantillas de entrenamiento.
 - Cronómetro integrado.
 - Recuperación de contraseña (no existe servidor).
 - PWA instalable / app móvil.
@@ -282,5 +312,6 @@ gym/
 5. **Biblioteca**: dataset + buscador fuzzy + figuras SVG + diagrama muscular + drawer desde la sesión.
 6. **Estadísticas**: cálculos + Chart.js.
 7. **Pulido**: export/import JSON, estados vacíos, manejo de errores, revisión UI.
+8. **Plantillas de sesión**: tablas `templates`/`template_items`, repositorio con prellenado desde el último registro, pantalla de gestión y carga en la sesión.
 
 Cada fase debe dejar la app desplegable y usable; la 2 y la 3 son prerrequisito de todo lo demás.
