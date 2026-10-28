@@ -9,7 +9,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    host: true,
     port: 5173,
+    strictPort: true,
   },
   // El worker de SQLite se emite como módulo ES: importa sqlite-wasm y usa
   // `import.meta.url` para localizar el .wasm.
