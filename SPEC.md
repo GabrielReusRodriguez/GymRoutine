@@ -1,6 +1,6 @@
 # Gym Tracker — Especificación técnica
 
-**Versión:** 2.2 · **Fecha:** 2026-10-28 · **Estado:** implementada (fases 1–9); la fase 9 (idioma) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge
+**Versión:** 2.3 · **Fecha:** 2026-10-28 · **Estado:** implementada (fases 1–9); la fase 9 (idioma) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge; la fase 10 (diseño responsive) está planificada
 
 Aplicación web para registrar entrenamientos de gimnasio: por cada día de entrenamiento se guarda la duración de cada ejercicio de cardio y el peso y las repeticiones (por series) de cada ejercicio de pesas. Desplegada en Cloudflare, con persistencia local en el navegador mediante SQLite WASM + OPFS y multiusuario mediante cuentas locales con contraseña.
 
@@ -19,6 +19,7 @@ Aplicación web para registrar entrenamientos de gimnasio: por cada día de entr
 | Contenido de ejercicios | Catálogo embebido (~60–80 ejercicios de fuerza) | Offline, sin API keys, mantenible |
 | Media del catálogo | SVG (figura del movimiento + diagrama muscular) | Ligero, offline, estilo consistente |
 | Idioma de la interfaz | Castellano (por defecto) y catalán, conmutables | Preferencia por perfil en `localStorage`, sin dependencias |
+| Diseño de interfaz | Responsive mobile-first, de 320 px a escritorio | Se usa en el móvil durante el entrenamiento y en escritorio para análisis |
 
 ### Consecuencias aceptadas
 - **Los datos viven en el navegador**: cada navegador/dispositivo tiene su propia BD. No hay sync multi-dispositivo en v1; el export/import JSON es el puente manual.
@@ -219,6 +220,14 @@ El enum `Muscle` es el mismo vocabulario del campo `muscle_group` de `exercises`
 7. **Estadísticas** — véase sección 8.
 8. **Ajustes** — export/import JSON, cambiar password, borrar perfil y elegir el idioma de la interfaz.
 
+Todas las pantallas cumplen la sección 12. En concreto:
+
+- **Sesión**: en móvil cada ejercicio es una tarjeta y las series se apilan; la barra de acciones de guardado queda por encima de la navegación inferior y nunca tapa campos.
+- **Plantillas y catálogo**: el editor y el selector de ejercicios ocupan la pantalla completa en móvil; las filas de acciones se envuelven sin desbordar.
+- **Histórico y estadísticas**: las tablas se desplazan dentro de su contenedor o se convierten en tarjetas; las gráficas ocupan el ancho disponible con altura relativa.
+- **Biblioteca**: la rejilla de ejercicios pasa de una columna en móvil a varias en tablet y escritorio; la ficha y el drawer se abren a pantalla completa en móvil.
+- **Login y ajustes**: formularios de una columna con controles de tamaño táctil y sin zoom automático en iOS.
+
 ### 7.1 Comportamiento de las plantillas
 
 - **Aplicar** fusiona los items en el borrador de la sesión abierta (cualquier fecha), sin duplicar ejercicios ya presentes y sin perder lo ya escrito.
@@ -284,7 +293,39 @@ La UI está disponible en **castellano** (por defecto) y **catalán**. No hay id
 
 ---
 
-## 12. Fuera de alcance v1
+## 12. Diseño responsive y multi-dispositivo
+
+La aplicación debe ser **responsive**: una sola base de código y la misma funcionalidad en móvil, tablet, portátil y escritorio. El móvil es el caso de uso principal (registrar y consultar durante el entrenamiento), así que el diseño parte de la pantalla pequeña y se amplía con breakpoints; nunca al revés.
+
+### 12.1 Requisitos
+
+- **Rango soportado**: desde 320 px de ancho (móvil pequeño en vertical) hasta 1920 px o más, en vertical y horizontal, y con zoom del navegador hasta el 200 % sin perder contenido ni funcionalidad.
+- **Sin scroll horizontal**: ninguna pantalla provoca desplazamiento horizontal de la página en ningún ancho soportado. Las tablas anchas se desplazan dentro de su propio contenedor o se convierten en tarjetas.
+- **Mobile-first**: los estilos base son los de móvil y los breakpoints solo añaden espacio y columnas. Breakpoints de referencia: `640px` (móvil grande), `900px` (tablet) y `1280px` (escritorio). Los valores exactos pueden ajustarse, pero no puede haber saltos de layout entre ellos.
+- **Navegación adaptable**: en pantallas estrechas (≤ 900 px) la barra lateral se convierte en barra inferior con los siete destinos accesibles, icono + etiqueta y respeto de `env(safe-area-inset-bottom)`. En escritorio vuelve a ser lateral y fija.
+- **Formularios táctiles**: controles con área táctil ≥ 44 × 44 px, separación suficiente entre acciones destructivas y de guardado, `inputMode` adecuado (`decimal` para peso/distancia, `numeric` para reps/series) y `font-size` ≥ 16 px en los inputs para evitar el zoom automático de iOS.
+- **Tablas y listas**: las series de pesas (`peso × reps`) se apilan en tarjetas legibles cuando no caben en columnas; el histórico, el catálogo y las estadísticas conservan todas sus columnas accesibles.
+- **Modales y drawers**: a pantalla completa en móvil, con cierre por botón, tecla `Escape` y toque fuera; el fondo no hace scroll mientras están abiertos.
+- **Gráficas**: Chart.js con `responsive: true` y `maintainAspectRatio: false`; ejes y leyendas legibles en 320 px y contenedores con altura relativa.
+- **Contenido gráfico**: SVG con `viewBox` y `width: 100%`; ninguna imagen o figura con ancho fijo que desborde.
+- **Tipografía y espaciado**: escalado fluido (`clamp()`) para títulos, sin anchos fijos en `px` para contenedores principales y `min-width: 0` en elementos de grid/flex para permitir el encogido.
+- **Altura móvil**: uso de `100dvh` (con fallback) para que las barras del navegador móvil no recorten la interfaz.
+- **Accesibilidad táctil y teclado**: ninguna acción depende solo de `hover`; foco visible; todo se puede completar con teclado y con lector de pantalla tanto en móvil como en escritorio.
+- **Sin dependencias nuevas**: el responsive se resuelve con CSS y los componentes existentes; no se introduce un framework de UI solo para esto.
+
+### 12.2 Verificación
+
+Cada cambio de interfaz se revisa, como mínimo, en anchos de **320, 360, 390, 768, 1024 y 1440 px**, en orientación vertical y horizontal, con los dos idiomas y con texto ampliado. La comprobación incluye: no hay scroll horizontal, no hay contenido cortado, todas las acciones son alcanzables y las gráficas no desbordan. Esta revisión es manual y forma parte de la definición de «terminado»; no hay tests automáticos de layout.
+
+### 12.3 Fuera de alcance
+
+- App nativa, PWA instalable y gestos específicos de plataforma.
+- Diseño distinto por dispositivo: la funcionalidad y la estructura son las mismas; solo cambia la disposición.
+- Soporte de navegadores sin CSS moderno (grid, `clamp()`, `dvh`) más allá de las dos últimas versiones de los navegadores mayoritarios.
+
+---
+
+## 13. Fuera de alcance v1
 
 - Sincronización multi-dispositivo / servidor de datos (D1).
 - Cronómetro integrado.
@@ -294,7 +335,7 @@ La UI está disponible en **castellano** (por defecto) y **catalán**. No hay id
 
 ---
 
-## 13. Estructura del repo
+## 14. Estructura del repo
 
 ```
 gym/
@@ -333,7 +374,7 @@ gym/
 
 ---
 
-## 14. Fases de implementación
+## 15. Fases de implementación
 
 1. **Scaffold**: Vite + React + Hono + wrangler; deploy "hello world" del Worker con assets.
 2. **BD**: cliente SQLite WASM/OPFS + Drizzle + migraciones embebidas + seed + repositorios con tests.
@@ -344,5 +385,6 @@ gym/
 7. **Pulido**: export/import JSON, estados vacíos, manejo de errores, revisión UI.
 8. **Plantillas de sesión**: tablas `templates`/`template_items`, repositorio con prellenado desde el último registro, pantalla de gestión y carga en la sesión.
 9. **Idioma de la interfaz**: castellano y catalán, preferencia por perfil en `localStorage`, diccionarios tipados, errores de dominio traducibles y biblioteca bilingüe.
+10. **Diseño responsive**: adaptar todas las pantallas al rango 320 px–escritorio según la sección 12, con navegación inferior en móvil, formularios táctiles, tablas y gráficas adaptables y revisión en los anchos de la sección 12.2.
 
 Cada fase debe dejar la app desplegable y usable; la 2 y la 3 son prerrequisito de todo lo demás.

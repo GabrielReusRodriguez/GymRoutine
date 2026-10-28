@@ -6,6 +6,8 @@ Guía para agentes (y humanos) que trabajan en este repositorio. La fuente de ve
 
 SPA de registro de entrenamientos de gimnasio desplegada en Cloudflare Worker. Los datos se guardan **en el navegador** con SQLite WASM + OPFS; el servidor (Hono) solo sirve los assets. Multiusuario mediante cuentas locales con password hasheado (argon2id).
 
+La interfaz debe ser **responsive**: la misma app, usable y legible en móvil, tablet, portátil y escritorio (SPEC §12). El móvil es el caso de uso principal.
+
 Lee `SPEC.md` antes de cualquier cambio funcional. Si este documento y la spec discrepan, corrige el desacuerdo o pregúntalo antes de improvisar.
 
 ## Stack y comandos
@@ -17,6 +19,7 @@ Lee `SPEC.md` antes de cualquier cambio funcional. Si este documento y la spec d
 | BD | `@sqlite.org/sqlite-wasm` (VFS OPFS) + Drizzle ORM |
 | Tests | Vitest |
 | Gráficas | Chart.js |
+| Diseño | CSS responsive mobile-first (`src/styles.css`), sin framework de UI |
 | i18n | Módulo propio (`src/client/i18n`) con diccionarios tipados castellano/catalán |
 | Deploy | wrangler |
 | Entorno de desarrollo | devcontainer (`.devcontainer/`) con Node 22 |
@@ -71,6 +74,22 @@ tests/                 # Vitest
 - Los componentes no importan datos de `library/` a través de la BD: la biblioteca es contenido estático embebido.
 - Ningún componente escribe texto visible directamente: usa `useI18n()` (`t`, `tError`, `dateLong`, `number`, `weight`). Los repositorios no formatean mensajes de usuario: lanzan claves de `ERROR_KEYS` envueltas en `DomainError`.
 
+## Diseño responsive
+
+La app ha de verse bien y funcionar igual en móvil, tablet y escritorio (SPEC §12). El móvil es el caso de uso principal, así que se diseña **mobile-first**: estilos base para pantalla pequeña y `@media (min-width: ...)` para ampliar.
+
+- Los estilos globales viven en `src/styles.css`; no metas estilos de layout en componentes si pueden ir en una clase reutilizable.
+- Breakpoints de referencia: `640px`, `900px` y `1280px`. La navegación pasa a barra inferior en ≤ 900 px y vuelve a lateral en escritorio.
+- Nada de anchos fijos que desborden: contenedores fluidos, `min-width: 0` en grid/flex, `max-width: 100%` en imágenes y SVG con `viewBox`.
+- Tablas anchas dentro de `.table-wrap` o convertidas en tarjetas; nunca scroll horizontal de página.
+- Controles táctiles de ≥ 44 × 44 px, `inputMode` correcto y `font-size` ≥ 16 px en inputs para evitar el zoom de iOS.
+- Modales y drawers a pantalla completa en móvil, con cierre por botón, `Escape` y toque fuera.
+- Gráficas con `responsive: true` y `maintainAspectRatio: false`; el contenedor marca la altura.
+- Usa `100dvh` y `env(safe-area-inset-*)` para las barras del navegador y los notch; nada de `100vh` a secas en pantallas principales.
+- Ninguna acción puede depender solo de `hover`; el foco debe ser visible y todo debe funcionar con teclado.
+
+Antes de dar por terminado un cambio de UI, revísalo en 320, 360, 390, 768, 1024 y 1440 px, en vertical y horizontal, con los dos idiomas. Si hay scroll horizontal, contenido cortado o una acción inalcanzable, no está terminado.
+
 ## Invariantes que no se pueden romper
 
 1. **Aislamiento por usuario**: toda consulta a tablas de dominio filtra por el `user_id` de la sesión activa. Un repositorio que devuelva datos de otro perfil es un bug crítico.
@@ -82,6 +101,7 @@ tests/                 # Vitest
 7. **OPFS exclusivo**: solo una pestaña abre la BD. `db/client.ts` toma el lock y `db/worker.ts` es el único sitio que abre OPFS/SQLite; los cambios en cualquiera de los dos requieren pruebas de lock.
 8. **Plantillas = preset, no sesión**: aplicar una plantilla solo rellena el borrador de la pantalla de sesión; nunca escribe en `sessions`/`exercise_logs`. La validación de logs sigue siendo la única puerta de guardado. Los items respetan el tipo del ejercicio (`series_count` solo en pesas; `duration_min`/`distance_km` solo en cardio) y un ejercicio referenciado por una plantilla cuenta como "en uso" para el soft-hide.
 9. **Idioma**: `es.ts` es la referencia de claves y `ca.ts` se tipa contra él, así que ambos diccionarios deben tener exactamente las mismas claves (paridad verificada por TypeScript y por test). Un error de dominio nuevo exige clave en `ERROR_KEYS`, entrada en los dos diccionarios y tests que comparen con la clave. La preferencia de idioma vive en `localStorage` (global + por perfil), nunca en la BD; los datos del usuario (nombres, notas, seed del catálogo) no se traducen.
+10. **Responsive**: ninguna pantalla puede provocar scroll horizontal desde 320 px, ni dejar contenido o acciones inalcanzables en móvil, tablet o escritorio. La navegación, los formularios, las tablas y las gráficas se adaptan según SPEC §12. Un layout que solo funciona en escritorio es un bug.
 
 ## Convenciones de código
 
@@ -89,6 +109,7 @@ tests/                 # Vitest
 - React: componentes función + hooks; sin clases.
 - Nombres en inglés para código e identificadores; la UI se escribe en castellano y catalán a través de los diccionarios, nunca con literales en los componentes.
 - Fechas y números siempre con el formateo locale-aware de `client/lib/format.ts` vía `useI18n()`.
+- CSS mobile-first: primero el layout de 320 px y luego los `@media (min-width: ...)`; evita `!important`, anchos fijos y posicionamientos absolutos para estructurar la página.
 - Comentarios solo para explicar el porqué.
 
 ## Git
@@ -103,7 +124,8 @@ tests/                 # Vitest
 - Repositorios se testean contra SQLite in-memory, no OPFS.
 - `shared/stats.ts` (Epley, volumen, agregaciones), `library/index.ts` (búsqueda fuzzy y localización) e `i18n` tienen cobertura obligatoria.
 - Cada invariante de la sección anterior tiene al menos un test que lo protege. Los tests de repositorios comprueban `ERROR_KEYS`, no textos literales.
+- El invariante responsive no tiene test automático: se verifica a mano con la checklist de SPEC §12.2 (320, 360, 390, 768, 1024 y 1440 px, vertical y horizontal, dos idiomas).
 
 ## Fases de implementación
 
-Ver `SPEC.md` §14. Trabajo en curso ordenado por fases; no adelantes una fase si la anterior no está desplegable y usable. Estado actual: **fases 1–9 completas; la fase 9 (idioma castellano/catalán) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge**.
+Ver `SPEC.md` §15. Trabajo en curso ordenado por fases; no adelantes una fase si la anterior no está desplegable y usable. Estado actual: **fases 1–9 completas; la fase 9 (idioma castellano/catalán) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge; la fase 10 (diseño responsive) está planificada**.
