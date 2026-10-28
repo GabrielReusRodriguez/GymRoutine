@@ -1053,3 +1053,30 @@ textarea {
     min-width: 0;
   }
 }
+
+/* Selector de idioma (Ajustes, login y barra lateral). */
+.lang-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-footer .lang-switch {
+  margin-bottom: 10px;
+}
+
+.sidebar-footer .lang-switch .chip {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.auth-lang {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.auth-screen {
+  position: relative;
+}

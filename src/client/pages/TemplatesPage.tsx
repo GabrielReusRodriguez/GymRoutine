@@ -14,9 +14,10 @@ import { listVisibleExercises } from '../../db/repositories/exercises';
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
+import { useI18n } from '../i18n';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { IconEdit, IconPlus, IconTrash } from '../components/Icons';
-import { parseNullableNumber, plural } from '../lib/format';
+import { parseNullableNumber } from '../lib/format';
 
 interface ItemDraft {
   key: string;
@@ -75,6 +76,7 @@ export function TemplatesPage() {
   const { user } = useAuth();
   const handle = useDbHandle();
   const navigate = useNavigate();
+  const { t, tError, plural } = useI18n();
 
   const templates = useAsync(() => listTemplates(handle, user!.id), [handle, user!.id]);
   const catalog = useAsync(() => listVisibleExercises(handle, user!.id), [handle, user!.id]);
@@ -103,7 +105,7 @@ export function TemplatesPage() {
         items: detail.items.map(itemFromDetail),
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     }
   };
 
@@ -173,25 +175,25 @@ export function TemplatesPage() {
         await updateTemplate(handle, user!.id, editor.id, input);
       }
       setEditor(null);
-      setMessage('Plantilla guardada.');
+      setMessage(t('templates.saved'));
       templates.reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (template: TemplateSummary) => {
-    if (!window.confirm(`¿Borrar la plantilla "${template.name}"?`)) return;
+    if (!window.confirm(t('templates.deleteConfirm', { name: template.name }))) return;
     setError(null);
     setMessage(null);
     try {
       await deleteTemplate(handle, user!.id, template.id);
-      setMessage('Plantilla borrada.');
+      setMessage(t('templates.deleted'));
       templates.reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     }
   };
 
@@ -200,10 +202,10 @@ export function TemplatesPage() {
     setMessage(null);
     try {
       await duplicateTemplate(handle, user!.id, template.id);
-      setMessage(`Copia creada a partir de "${template.name}".`);
+      setMessage(t('templates.copied', { name: template.name }));
       templates.reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     }
   };
 
@@ -213,16 +215,13 @@ export function TemplatesPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Entrenamiento</div>
-          <h1>Plantillas</h1>
-          <p>
-            Listas reutilizables de ejercicios. Al aplicarlas se cargan en la sesión con el peso y las
-            repeticiones de tu último registro: solo tienes que ajustar los números.
-          </p>
+          <div className="eyebrow">{t('templates.eyebrow')}</div>
+          <h1>{t('templates.title')}</h1>
+          <p>{t('templates.intro')}</p>
         </div>
         {editor ? null : (
           <button className="btn btn-primary" onClick={startNew}>
-            <IconPlus /> Nueva plantilla
+            <IconPlus /> {t('templates.new')}
           </button>
         )}
       </div>
@@ -235,22 +234,22 @@ export function TemplatesPage() {
           <div className="card card-pad">
             <div className="row" style={{ gap: 14, flexWrap: 'wrap' }}>
               <div className="field" style={{ flex: '1 1 240px' }}>
-                <label htmlFor="template-name">Nombre</label>
+                <label htmlFor="template-name">{t('templates.name')}</label>
                 <input
                   id="template-name"
                   className="input"
-                  placeholder="Día de empuje, Pierna, Full body…"
+                  placeholder={t('templates.namePlaceholder')}
                   value={editor.name}
                   onChange={(event) => setEditor({ ...editor, name: event.target.value })}
                   autoFocus
                 />
               </div>
               <div className="field" style={{ flex: '2 1 320px' }}>
-                <label htmlFor="template-notes">Notas (opcional)</label>
+                <label htmlFor="template-notes">{t('templates.notes')}</label>
                 <input
                   id="template-notes"
                   className="input"
-                  placeholder="Objetivo del día, progresión…"
+                  placeholder={t('templates.notesPlaceholder')}
                   value={editor.notes}
                   onChange={(event) => setEditor({ ...editor, notes: event.target.value })}
                 />
@@ -260,9 +259,9 @@ export function TemplatesPage() {
 
           {editor.items.length === 0 ? (
             <div className="empty">
-              <p style={{ fontWeight: 600, color: 'var(--text)' }}>La plantilla está vacía</p>
+              <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('templates.emptyTitle')}</p>
               <p className="small" style={{ marginTop: 4 }}>
-                Añade los ejercicios en el orden en que los haces.
+                {t('templates.emptyBody')}
               </p>
             </div>
           ) : null}
@@ -273,8 +272,8 @@ export function TemplatesPage() {
                 <div>
                   <div className="log-title">{item.name}</div>
                   <div className="small dim">
-                    {item.type === 'cardio' ? 'Cardio' : 'Pesas'}
-                    {index === 0 ? ' · primero' : ''}
+                    {item.type === 'cardio' ? t('type.cardio') : t('type.weights')}
+                    {index === 0 ? ` · ${t('templates.first')}` : ''}
                   </div>
                 </div>
                 <div className="row" style={{ marginLeft: 'auto', gap: 4 }}>
@@ -282,8 +281,8 @@ export function TemplatesPage() {
                     className="btn btn-ghost btn-icon"
                     onClick={() => moveItem(item.key, -1)}
                     disabled={index === 0}
-                    aria-label="Subir"
-                    title="Subir"
+                    aria-label={t('templates.moveUp')}
+                    title={t('templates.moveUp')}
                   >
                     <span aria-hidden>↑</span>
                   </button>
@@ -291,16 +290,16 @@ export function TemplatesPage() {
                     className="btn btn-ghost btn-icon"
                     onClick={() => moveItem(item.key, 1)}
                     disabled={index === editor.items.length - 1}
-                    aria-label="Bajar"
-                    title="Bajar"
+                    aria-label={t('templates.moveDown')}
+                    title={t('templates.moveDown')}
                   >
                     <span aria-hidden>↓</span>
                   </button>
                   <button
                     className="btn btn-ghost btn-icon"
                     onClick={() => removeItem(item.key)}
-                    aria-label="Quitar ejercicio"
-                    title="Quitar"
+                    aria-label={t('templates.removeExercise')}
+                    title={t('common.remove')}
                   >
                     <IconTrash />
                   </button>
@@ -311,7 +310,7 @@ export function TemplatesPage() {
                 {item.type === 'cardio' ? (
                   <div className="row" style={{ gap: 14 }}>
                     <div className="field" style={{ width: 130 }}>
-                      <label>Minutos (opcional)</label>
+                      <label>{t('templates.minutesOptional')}</label>
                       <input
                         className="input mono"
                         inputMode="decimal"
@@ -321,11 +320,11 @@ export function TemplatesPage() {
                       />
                     </div>
                     <div className="field" style={{ width: 130 }}>
-                      <label>Distancia (km)</label>
+                      <label>{t('session.distance')}</label>
                       <input
                         className="input mono"
                         inputMode="decimal"
-                        placeholder="opcional"
+                        placeholder={t('common.optional')}
                         value={item.distance}
                         onChange={(event) => updateItem(item.key, { distance: event.target.value })}
                       />
@@ -334,7 +333,7 @@ export function TemplatesPage() {
                 ) : (
                   <div className="row" style={{ gap: 14 }}>
                     <div className="field" style={{ width: 110 }}>
-                      <label>Series</label>
+                      <label>{t('templates.series')}</label>
                       <input
                         className="input mono"
                         inputMode="numeric"
@@ -343,21 +342,21 @@ export function TemplatesPage() {
                       />
                     </div>
                     <div className="field" style={{ width: 120 }}>
-                      <label>Peso por defecto</label>
+                      <label>{t('templates.defaultWeight')}</label>
                       <input
                         className="input mono"
                         inputMode="decimal"
-                        placeholder="opcional"
+                        placeholder={t('common.optional')}
                         value={item.weight}
                         onChange={(event) => updateItem(item.key, { weight: event.target.value })}
                       />
                     </div>
                     <div className="field" style={{ width: 120 }}>
-                      <label>Reps por defecto</label>
+                      <label>{t('templates.defaultReps')}</label>
                       <input
                         className="input mono"
                         inputMode="numeric"
-                        placeholder="opcional"
+                        placeholder={t('common.optional')}
                         value={item.reps}
                         onChange={(event) => updateItem(item.key, { reps: event.target.value })}
                       />
@@ -370,17 +369,17 @@ export function TemplatesPage() {
 
           <div className="row" style={{ gap: 10 }}>
             <button className="btn" onClick={() => setPickerOpen(true)}>
-              <IconPlus /> Añadir ejercicio
+              <IconPlus /> {t('session.addExercise')}
             </button>
             <button
               className="btn btn-primary"
               onClick={save}
               disabled={saving || !editor.name.trim() || editor.items.length === 0}
             >
-              {saving ? 'Guardando…' : 'Guardar plantilla'}
+              {saving ? t('common.saving') : t('templates.save')}
             </button>
             <button className="btn btn-ghost" onClick={() => setEditor(null)}>
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -388,9 +387,9 @@ export function TemplatesPage() {
         <div className="stack" style={{ gap: 12 }}>
           {data.length === 0 && !templates.loading ? (
             <div className="empty">
-              <p style={{ fontWeight: 600, color: 'var(--text)' }}>Todavía no hay plantillas</p>
+              <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('templates.noneTitle')}</p>
               <p className="small" style={{ marginTop: 4 }}>
-                Crea una aquí o guarda la sesión de hoy como plantilla desde la pantalla de registro.
+                {t('templates.noneBody')}
               </p>
             </div>
           ) : null}
@@ -401,7 +400,7 @@ export function TemplatesPage() {
                 <div>
                   <div className="log-title">{template.name}</div>
                   <div className="small dim">
-                    {plural(template.itemCount, 'ejercicio', 'ejercicios')}
+                    {plural(template.itemCount, t('common.exercise'), t('common.exercises'))}
                     {template.notes ? ` · ${template.notes}` : ''}
                   </div>
                 </div>
@@ -410,19 +409,19 @@ export function TemplatesPage() {
                     className="btn btn-sm btn-primary"
                     onClick={() => navigate(`/session?template=${template.id}`)}
                   >
-                    Aplicar a hoy
+                    {t('templates.applyToday')}
                   </button>
                   <button className="btn btn-sm" onClick={() => void startEdit(template.id)}>
-                    <IconEdit width={15} height={15} /> Editar
+                    <IconEdit width={15} height={15} /> {t('common.edit')}
                   </button>
                   <button className="btn btn-sm btn-ghost" onClick={() => void duplicate(template)}>
-                    Duplicar
+                    {t('templates.duplicate')}
                   </button>
                   <button
                     className="btn btn-sm btn-ghost btn-icon"
                     onClick={() => void remove(template)}
-                    aria-label="Borrar plantilla"
-                    title="Borrar"
+                    aria-label={t('templates.deleteAria')}
+                    title={t('common.delete')}
                   >
                     <IconTrash width={15} height={15} />
                   </button>

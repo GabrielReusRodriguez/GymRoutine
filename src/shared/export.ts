@@ -6,6 +6,7 @@ import type {
   BackupTemplate,
   BackupTemplateItem,
 } from './types';
+import { DomainError, ERROR_KEYS, type ErrorVars } from './errors';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -19,16 +20,22 @@ function isNumberOrNull(value: unknown): value is number | null {
   return value === null || isNumber(value);
 }
 
-function fail(message: string): never {
-  throw new Error(`Copia de seguridad inválida: ${message}`);
+function fail(key: string, vars?: ErrorVars): never {
+  throw new DomainError(key, vars);
 }
 
 function parseExercise(value: unknown, index: number): BackupExercise {
-  if (!isObject(value)) fail(`ejercicio #${index + 1} no es un objeto`);
+  if (!isObject(value)) fail(ERROR_KEYS.backup.exerciseNotObject, { index: index + 1 });
   const { name, type, muscleGroup, libraryId, notes } = value as Record<string, unknown>;
-  if (typeof name !== 'string' || name.trim() === '') fail(`ejercicio #${index + 1} sin nombre`);
-  if (type !== 'cardio' && type !== 'weights') fail(`ejercicio "${name}" con tipo inválido`);
-  if (typeof muscleGroup !== 'string') fail(`ejercicio "${name}" sin grupo muscular`);
+  if (typeof name !== 'string' || name.trim() === '') {
+    fail(ERROR_KEYS.backup.exerciseNoName, { index: index + 1 });
+  }
+  if (type !== 'cardio' && type !== 'weights') {
+    fail(ERROR_KEYS.backup.exerciseBadType, { name });
+  }
+  if (typeof muscleGroup !== 'string') {
+    fail(ERROR_KEYS.backup.exerciseNoMuscle, { name });
+  }
   return {
     name: name.trim(),
     type,
@@ -39,15 +46,23 @@ function parseExercise(value: unknown, index: number): BackupExercise {
 }
 
 function parseLog(value: unknown, index: number): BackupLog {
-  if (!isObject(value)) fail(`log #${index + 1} no es un objeto`);
+  if (!isObject(value)) fail(ERROR_KEYS.backup.logNotObject, { index: index + 1 });
   const { exercise, durationMin, distanceKm, sets } = value as Record<string, unknown>;
-  if (typeof exercise !== 'string' || exercise.trim() === '') fail(`log #${index + 1} sin ejercicio`);
-  if (!Array.isArray(sets)) fail(`log "${exercise}" sin series`);
+  if (typeof exercise !== 'string' || exercise.trim() === '') {
+    fail(ERROR_KEYS.backup.logNoExercise, { index: index + 1 });
+  }
+  if (!Array.isArray(sets)) fail(ERROR_KEYS.backup.logNoSets, { exercise });
   const parsedSets = sets.map((set, setIndex) => {
-    if (!isObject(set)) fail(`serie #${setIndex + 1} de "${exercise}" inválida`);
+    if (!isObject(set)) {
+      fail(ERROR_KEYS.backup.setInvalid, { index: setIndex + 1, exercise });
+    }
     const { weightKg, reps } = set as Record<string, unknown>;
-    if (!isNumberOrNull(weightKg)) fail(`serie #${setIndex + 1} de "${exercise}" con peso inválido`);
-    if (!isNumberOrNull(reps)) fail(`serie #${setIndex + 1} de "${exercise}" con reps inválidas`);
+    if (!isNumberOrNull(weightKg)) {
+      fail(ERROR_KEYS.backup.setBadWeight, { index: setIndex + 1, exercise });
+    }
+    if (!isNumberOrNull(reps)) {
+      fail(ERROR_KEYS.backup.setBadReps, { index: setIndex + 1, exercise });
+    }
     return { weightKg, reps };
   });
   return {
@@ -59,12 +74,12 @@ function parseLog(value: unknown, index: number): BackupLog {
 }
 
 function parseSession(value: unknown, index: number): BackupSession {
-  if (!isObject(value)) fail(`sesión #${index + 1} no es un objeto`);
+  if (!isObject(value)) fail(ERROR_KEYS.backup.sessionNotObject, { index: index + 1 });
   const { date, notes, logs } = value as Record<string, unknown>;
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    fail(`sesión #${index + 1} con fecha inválida`);
+    fail(ERROR_KEYS.backup.sessionBadDate, { index: index + 1 });
   }
-  if (!Array.isArray(logs)) fail(`sesión ${date} sin logs`);
+  if (!Array.isArray(logs)) fail(ERROR_KEYS.backup.sessionNoLogs, { date });
   return {
     date,
     notes: typeof notes === 'string' ? notes : null,
@@ -73,11 +88,13 @@ function parseSession(value: unknown, index: number): BackupSession {
 }
 
 function parseTemplateItem(value: unknown, index: number, template: string): BackupTemplateItem {
-  if (!isObject(value)) fail(`item #${index + 1} de la plantilla "${template}" no es un objeto`);
+  if (!isObject(value)) {
+    fail(ERROR_KEYS.backup.itemNotObject, { index: index + 1, template });
+  }
   const { exercise, seriesCount, defaultWeightKg, defaultReps, durationMin, distanceKm } =
     value as Record<string, unknown>;
   if (typeof exercise !== 'string' || exercise.trim() === '') {
-    fail(`item #${index + 1} de la plantilla "${template}" sin ejercicio`);
+    fail(ERROR_KEYS.backup.itemNoExercise, { index: index + 1, template });
   }
   return {
     exercise: exercise.trim(),
@@ -90,10 +107,12 @@ function parseTemplateItem(value: unknown, index: number, template: string): Bac
 }
 
 function parseTemplate(value: unknown, index: number): BackupTemplate {
-  if (!isObject(value)) fail(`plantilla #${index + 1} no es un objeto`);
+  if (!isObject(value)) fail(ERROR_KEYS.backup.templateNotObject, { index: index + 1 });
   const { name, notes, items } = value as Record<string, unknown>;
-  if (typeof name !== 'string' || name.trim() === '') fail(`plantilla #${index + 1} sin nombre`);
-  if (!Array.isArray(items)) fail(`plantilla "${name}" sin ejercicios`);
+  if (typeof name !== 'string' || name.trim() === '') {
+    fail(ERROR_KEYS.backup.templateNoName, { index: index + 1 });
+  }
+  if (!Array.isArray(items)) fail(ERROR_KEYS.backup.templateNoItems, { name });
   const trimmed = name.trim();
   return {
     name: trimmed,
@@ -102,24 +121,24 @@ function parseTemplate(value: unknown, index: number): BackupTemplate {
   };
 }
 
-/** Valida y tipa un JSON de copia de seguridad. Lanza Error con mensaje legible. */
+/** Valida y tipa un JSON de copia de seguridad. Lanza DomainError con clave traducible. */
 export function parseBackup(raw: string): BackupFile {
   let data: unknown;
   try {
     data = JSON.parse(raw);
   } catch {
-    fail('el archivo no es JSON');
+    fail(ERROR_KEYS.backup.notJson);
   }
-  if (!isObject(data)) fail('el contenido no es un objeto');
-  if (data.format !== 'gym-tracker') fail('no es un archivo de Gym Tracker');
+  if (!isObject(data)) fail(ERROR_KEYS.backup.notObject);
+  if (data.format !== 'gym-tracker') fail(ERROR_KEYS.backup.notGymTracker);
   if (data.version !== 1 && data.version !== 2) {
-    fail(`versión no soportada (${String(data.version)})`);
+    fail(ERROR_KEYS.backup.unsupportedVersion, { version: String(data.version) });
   }
-  if (!Array.isArray(data.exercises)) fail('falta la lista de ejercicios');
-  if (!Array.isArray(data.sessions)) fail('falta la lista de sesiones');
-  if (!isObject(data.user)) fail('falta el usuario');
+  if (!Array.isArray(data.exercises)) fail(ERROR_KEYS.backup.noExercises);
+  if (!Array.isArray(data.sessions)) fail(ERROR_KEYS.backup.noSessions);
+  if (!isObject(data.user)) fail(ERROR_KEYS.backup.noUser);
   if (data.templates !== undefined && !Array.isArray(data.templates)) {
-    fail('la lista de plantillas no es válida');
+    fail(ERROR_KEYS.backup.badTemplates);
   }
 
   return {

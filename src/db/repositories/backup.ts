@@ -4,6 +4,7 @@ import { normalize } from '../../library';
 import type { BackupFile, SessionInput } from '../../shared/types';
 import { exerciseLogs, exercises, series, sessions, templateItems, templates } from '../schema';
 import { NotFoundError } from './errors';
+import { ERROR_KEYS } from '../../shared/errors';
 import { validateSessionInput, listSessionDetails, writeSession } from './sessions';
 import { getTemplate, listTemplates, writeTemplate } from './templates';
 import { getUser } from './users';
@@ -11,7 +12,7 @@ import { getUser } from './users';
 /** Exporta todos los datos del perfil activo (Spec §10). */
 export async function exportUserData(h: DbHandle, userId: number): Promise<BackupFile> {
   const user = await getUser(h, userId);
-  if (!user) throw new NotFoundError('Usuario no encontrado.');
+  if (!user) throw new NotFoundError(ERROR_KEYS.backup.userNotFound);
 
   const details = await listSessionDetails(h, userId);
   const templateDetails = await Promise.all(
@@ -79,7 +80,7 @@ export async function importUserData(
   backup: BackupFile,
 ): Promise<void> {
   const user = await getUser(h, userId);
-  if (!user) throw new NotFoundError('Usuario no encontrado.');
+  if (!user) throw new NotFoundError(ERROR_KEYS.backup.userNotFound);
 
   await withTransaction(h.exec, async () => {
     // 1. Vaciar sesiones del usuario

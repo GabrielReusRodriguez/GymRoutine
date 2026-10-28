@@ -1,3 +1,5 @@
+import { LOCALE_TAGS, type Locale } from '../../shared/locale';
+
 export function todayISO(): string {
   const now = new Date();
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -12,7 +14,7 @@ export function parseLocalDate(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
 }
 
-/** Pone en mayúscula solo la primera letra (los textos de es-ES van en minúscula). */
+/** Pone en mayúscula solo la primera letra (los textos van en minúscula). */
 export function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -22,9 +24,9 @@ export function plural(count: number, singular: string, pluralForm: string): str
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-export function formatDateLong(iso: string): string {
+export function formatDateLong(iso: string, locale: Locale = 'es'): string {
   return capitalize(
-    parseLocalDate(iso).toLocaleDateString('es-ES', {
+    parseLocalDate(iso).toLocaleDateString(LOCALE_TAGS[locale], {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -33,8 +35,8 @@ export function formatDateLong(iso: string): string {
   );
 }
 
-export function formatDateShort(iso: string): string {
-  return parseLocalDate(iso).toLocaleDateString('es-ES', {
+export function formatDateShort(iso: string, locale: Locale = 'es'): string {
+  return parseLocalDate(iso).toLocaleDateString(LOCALE_TAGS[locale], {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -48,13 +50,13 @@ export function parseNullableNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function formatNumber(value: number, digits = 0): string {
-  return value.toLocaleString('es-ES', {
+export function formatNumber(value: number, digits = 0, locale: Locale = 'es'): string {
+  return value.toLocaleString(LOCALE_TAGS[locale], {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
 }
 
-export function formatWeight(value: number): string {
-  return `${formatNumber(value, value % 1 === 0 ? 0 : 1)} kg`;
+export function formatWeight(value: number, locale: Locale = 'es'): string {
+  return `${formatNumber(value, value % 1 === 0 ? 0 : 1, locale)} kg`;
 }

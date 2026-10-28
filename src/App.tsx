@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useDb } from './client/hooks/useDb';
 import { useAuth } from './client/hooks/useAuth';
+import { useI18n } from './client/i18n';
 import { AppLayout } from './client/components/AppLayout';
 import { LoginPage } from './client/pages/LoginPage';
 import { SessionPage } from './client/pages/SessionPage';
@@ -14,13 +15,14 @@ import { TemplatesPage } from './client/pages/TemplatesPage';
 export function App() {
   const { status, error, retry } = useDb();
   const { user, ready } = useAuth();
+  const { t } = useI18n();
 
   if (status === 'loading') {
     return (
       <div className="state-screen">
         <div>
           <div className="spinner" />
-          <p className="muted">Abriendo la base de datos local…</p>
+          <p className="muted">{t('app.loadingDb')}</p>
         </div>
       </div>
     );
@@ -30,14 +32,14 @@ export function App() {
     return (
       <div className="state-screen">
         <div className="card state-card">
-          <h1 style={{ fontSize: '1.3rem' }}>Abierta en otra pestaña</h1>
+          <h1 style={{ fontSize: '1.3rem' }}>{t('app.lockedTitle')}</h1>
           <p className="muted small" style={{ marginTop: 8 }}>
-            {error} Cierra la otra pestaña (o esta) y vuelve a intentarlo: SQLite solo permite un
-            propietario exclusivo del almacenamiento.
+            {error ? `${error} ` : ''}
+            {t('app.lockedBody')}
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 18 }}>
             <button className="btn btn-primary" onClick={retry}>
-              Reintentar
+              {t('app.retry')}
             </button>
           </div>
         </div>
@@ -49,16 +51,16 @@ export function App() {
     return (
       <div className="state-screen">
         <div className="card state-card">
-          <h1 style={{ fontSize: '1.3rem' }}>No se pudo abrir la base de datos</h1>
+          <h1 style={{ fontSize: '1.3rem' }}>{t('app.errorTitle')}</h1>
           <p className="muted small" style={{ marginTop: 8 }}>
             {error}
           </p>
           <p className="dim small" style={{ marginTop: 8 }}>
-            La app necesita un navegador con OPFS y un contexto seguro (HTTPS o localhost).
+            {t('app.errorBody')}
           </p>
           <div className="row" style={{ justifyContent: 'center', marginTop: 18 }}>
             <button className="btn" onClick={retry}>
-              Reintentar
+              {t('app.retry')}
             </button>
           </div>
         </div>

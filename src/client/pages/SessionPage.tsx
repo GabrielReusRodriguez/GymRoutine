@@ -10,17 +10,13 @@ import { applyTemplate, createTemplate, listTemplates } from '../../db/repositor
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
+import { useI18n } from '../i18n';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { TemplatePicker } from '../components/TemplatePicker';
 import { LibraryDrawer } from '../components/LibraryDrawer';
 import { SeriesEditor } from '../components/SeriesEditor';
 import { IconInfo, IconPlus, IconTemplate, IconTrash, IconX } from '../components/Icons';
-import {
-  formatDateLong,
-  isValidISODate,
-  parseNullableNumber,
-  todayISO,
-} from '../lib/format';
+import { isValidISODate, parseNullableNumber, todayISO } from '../lib/format';
 
 interface Draft {
   key: string;
@@ -53,6 +49,7 @@ function draftFromExercise(exercise: Exercise): Draft {
 export function SessionPage() {
   const { user } = useAuth();
   const handle = useDbHandle();
+  const { t, tError, dateLong, locale } = useI18n();
   const params = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -157,12 +154,12 @@ export function SessionPage() {
       const application = await applyTemplate(handle, user!.id, templateId);
       mergeTemplate(application.items);
       setTemplatePickerOpen(false);
-      setSuccess(`Plantilla "${application.name}" cargada.`);
+      setSuccess(t('session.templateLoaded', { name: application.name }));
       if (application.skipped.length > 0) {
-        setError(`No se pudieron cargar: ${application.skipped.join(', ')}.`);
+        setError(t('session.templateSkipped', { names: application.skipped.join(', ') }));
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     }
   };
 
@@ -202,10 +199,10 @@ export function SessionPage() {
       await createTemplate(handle, user!.id, { name, notes: notes.trim() || null, items });
       setSaveTemplateOpen(false);
       setTemplateName('');
-      setSuccess('Plantilla guardada.');
+      setSuccess(t('session.templateSaved'));
       templates.reload();
     } catch (cause) {
-      setTemplateError(cause instanceof Error ? cause.message : String(cause));
+      setTemplateError(tError(cause));
     } finally {
       setSavingTemplate(false);
     }
@@ -238,11 +235,11 @@ export function SessionPage() {
           sets: draft.type === 'weights' ? draft.sets : [],
         })),
       });
-      setSuccess('Sesión guardada.');
+      setSuccess(t('session.saved'));
       loadedSignature.current = null;
       session.reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     } finally {
       setSaving(false);
     }
@@ -254,9 +251,9 @@ export function SessionPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Registro</div>
-          <h1>{isToday ? 'Sesión de hoy' : 'Editar sesión'}</h1>
-          <p>{formatDateLong(date)}</p>
+          <div className="eyebrow">{t('session.eyebrow')}</div>
+          <h1>{isToday ? t('session.today') : t('session.edit')}</h1>
+          <p>{dateLong(date)}</p>
         </div>
         <div className="date-hero">
           <input
@@ -268,21 +265,21 @@ export function SessionPage() {
           />
           {!isToday ? (
             <Link className="btn btn-sm" to="/session">
-              Ir a hoy
+              {t('session.goToday')}
             </Link>
           ) : null}
         </div>
       </div>
 
-      {session.error ? <div className="alert" style={{ marginBottom: 16 }}>{session.error}</div> : null}
+      {session.error ? <div className="alert" style={{ marginBottom: 16 }}>{tError(session.error)}</div> : null}
 
       <div className="card card-pad" style={{ marginBottom: 18 }}>
         <div className="field">
-          <label htmlFor="notes">Notas de la sesión (opcional)</label>
+          <label htmlFor="notes">{t('session.notes')}</label>
           <textarea
             id="notes"
             className="textarea"
-            placeholder="Sensaciones, energía, molestias…"
+            placeholder={t('session.notesPlaceholder')}
             value={notes}
             onChange={(event) => {
               setNotes(event.target.value);
@@ -295,9 +292,9 @@ export function SessionPage() {
       <div className="stack" style={{ gap: 14 }}>
         {drafts.length === 0 ? (
           <div className="empty">
-            <p style={{ fontWeight: 600, color: 'var(--text)' }}>Todavía no hay ejercicios</p>
+            <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('session.emptyTitle')}</p>
             <p className="small" style={{ marginTop: 4 }}>
-              Añade cardio (minutos) y pesas (peso × reps por serie).
+              {t('session.emptyBody')}
             </p>
           </div>
         ) : null}
@@ -307,18 +304,18 @@ export function SessionPage() {
             <div className="log-head">
               <div>
                 <div className="log-title">{draft.name}</div>
-                <div className="small dim">{draft.type === 'cardio' ? 'Cardio' : 'Pesas'}</div>
+                <div className="small dim">{draft.type === 'cardio' ? t('type.cardio') : t('type.weights')}</div>
               </div>
               <div className="row" style={{ marginLeft: 'auto', gap: 4 }}>
                 {draft.libraryId ? (
                   <button
                     className="btn btn-ghost btn-icon"
                     onClick={() => {
-                      const library = getLibraryExercise(draft.libraryId!);
+                      const library = getLibraryExercise(draft.libraryId!, locale);
                       if (library) setDrawer(library);
                     }}
-                    aria-label="Ver técnica en la biblioteca"
-                    title="Ver técnica"
+                    aria-label={t('session.viewTechniqueAria')}
+                    title={t('session.viewTechnique')}
                   >
                     <IconInfo />
                   </button>
@@ -326,7 +323,7 @@ export function SessionPage() {
                 <button
                   className="btn btn-ghost btn-icon"
                   onClick={() => removeDraft(draft.key)}
-                  aria-label="Quitar ejercicio"
+                  aria-label={t('session.removeExerciseAria')}
                 >
                   <IconTrash />
                 </button>
@@ -337,7 +334,7 @@ export function SessionPage() {
               {draft.type === 'cardio' ? (
                 <div className="row" style={{ gap: 14 }}>
                   <div className="field" style={{ width: 130 }}>
-                    <label>Minutos</label>
+                    <label>{t('session.minutes')}</label>
                     <input
                       className="input mono"
                       inputMode="decimal"
@@ -347,11 +344,11 @@ export function SessionPage() {
                     />
                   </div>
                   <div className="field" style={{ width: 130 }}>
-                    <label>Distancia (km)</label>
+                    <label>{t('session.distance')}</label>
                     <input
                       className="input mono"
                       inputMode="decimal"
-                      placeholder="opcional"
+                      placeholder={t('common.optional')}
                       value={draft.distance}
                       onChange={(event) => updateDraft(draft.key, { distance: event.target.value })}
                     />
@@ -371,10 +368,10 @@ export function SessionPage() {
 
       <div className="row" style={{ marginTop: 18, gap: 10, flexWrap: 'wrap' }}>
         <button className="btn" onClick={() => setPickerOpen(true)}>
-          <IconPlus /> Añadir ejercicio
+          <IconPlus /> {t('session.addExercise')}
         </button>
         <button className="btn" onClick={() => setTemplatePickerOpen(true)} disabled={templates.loading}>
-          <IconTemplate /> Cargar plantilla
+          <IconTemplate /> {t('session.loadTemplate')}
         </button>
         <button
           className="btn btn-ghost"
@@ -383,12 +380,12 @@ export function SessionPage() {
             setSaveTemplateOpen(true);
           }}
           disabled={drafts.length === 0}
-          title={drafts.length === 0 ? 'Añade ejercicios primero' : undefined}
+          title={drafts.length === 0 ? t('session.addFirst') : undefined}
         >
-          Guardar como plantilla
+          {t('session.saveAsTemplate')}
         </button>
         <button className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar sesión'}
+          {saving ? t('common.saving') : t('session.save')}
         </button>
         {success ? <span className="badge badge-accent">{success}</span> : null}
       </div>
@@ -421,22 +418,22 @@ export function SessionPage() {
             aria-modal="true"
           >
             <div className="modal-head">
-              <h2>Guardar como plantilla</h2>
+              <h2>{t('session.saveAsTemplate')}</h2>
               <button
                 className="btn btn-ghost btn-icon"
                 onClick={() => setSaveTemplateOpen(false)}
-                aria-label="Cerrar"
+                aria-label={t('common.close')}
               >
                 <IconX />
               </button>
             </div>
             <div className="modal-body">
               <div className="field">
-                <label htmlFor="template-name-session">Nombre de la plantilla</label>
+                <label htmlFor="template-name-session">{t('session.templateName')}</label>
                 <input
                   id="template-name-session"
                   className="input"
-                  placeholder="Día de empuje, Pierna, Full body…"
+                  placeholder={t('session.templateNamePlaceholder')}
                   value={templateName}
                   onChange={(event) => setTemplateName(event.target.value)}
                   onKeyDown={(event) => {
@@ -446,8 +443,7 @@ export function SessionPage() {
                 />
               </div>
               <p className="dim small" style={{ marginTop: 8 }}>
-                Se guardan los {drafts.length} ejercicios de esta sesión con su número de series. Al
-                aplicarla se prellenan con tu último registro.
+                {t('session.saveTemplateHelp')}
               </p>
               {templateError ? (
                 <div className="alert" style={{ marginTop: 12 }}>
@@ -456,14 +452,14 @@ export function SessionPage() {
               ) : null}
               <div className="row" style={{ marginTop: 16, gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn btn-ghost" onClick={() => setSaveTemplateOpen(false)}>
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   className="btn btn-primary"
                   onClick={() => void saveAsTemplate()}
                   disabled={savingTemplate || templateName.trim().length < 2}
                 >
-                  {savingTemplate ? 'Guardando…' : 'Guardar plantilla'}
+                  {savingTemplate ? t('common.saving') : t('session.saveTemplate')}
                 </button>
               </div>
             </div>

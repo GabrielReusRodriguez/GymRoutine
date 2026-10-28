@@ -13,6 +13,7 @@ import type {
   TemplateSummary,
 } from '../../shared/types';
 import { exerciseTypesById } from './exercises';
+import { ERROR_KEYS } from '../../shared/errors';
 import { NotFoundError, ValidationError } from './errors';
 
 /** Tope defensivo: una plantilla no precrea una lista absurda de series. */
@@ -35,7 +36,7 @@ async function exercisesForItems(
   for (const id of ids) {
     const exercise = map.get(id);
     if (!exercise || (exercise.userId !== null && exercise.userId !== userId)) {
-      throw new ValidationError('Hay un ejercicio que no existe o no es tuyo.');
+      throw new ValidationError(ERROR_KEYS.templates.exerciseUnavailable);
     }
   }
   return map;
@@ -44,30 +45,31 @@ async function exercisesForItems(
 /** Normaliza y valida: la plantilla respeta las mismas reglas cardio/pesas que una sesión. */
 function normalizeTemplate(input: TemplateInput, exerciseMap: Map<number, Exercise>): NormalizedTemplate {
   const name = input.name.trim();
-  if (name.length < 2) throw new ValidationError('El nombre de la plantilla es demasiado corto.');
-  if (input.items.length === 0) throw new ValidationError('Añade al menos un ejercicio a la plantilla.');
+  if (name.length < 2) throw new ValidationError(ERROR_KEYS.templates.nameTooShort);
+  if (input.items.length === 0) throw new ValidationError(ERROR_KEYS.templates.empty);
 
   const seen = new Set<number>();
   const items = input.items.map((item) => {
     const exercise = exerciseMap.get(item.exerciseId);
-    if (!exercise) throw new ValidationError('Hay un ejercicio que no existe o no es tuyo.');
+    if (!exercise) throw new ValidationError(ERROR_KEYS.templates.exerciseUnavailable);
+    const vars = { name: exercise.name };
     if (seen.has(item.exerciseId)) {
-      throw new ValidationError(`"${exercise.name}" está repetido en la plantilla.`);
+      throw new ValidationError(ERROR_KEYS.templates.exerciseDuplicated, vars);
     }
     seen.add(item.exerciseId);
 
     if (exercise.type === 'cardio') {
       if (item.seriesCount !== null) {
-        throw new ValidationError(`"${exercise.name}": el cardio no lleva series en la plantilla.`);
+        throw new ValidationError(ERROR_KEYS.templates.cardioNoSeries, vars);
       }
       if (item.defaultWeightKg !== null || item.defaultReps !== null) {
-        throw new ValidationError(`"${exercise.name}": el cardio no lleva peso ni repeticiones.`);
+        throw new ValidationError(ERROR_KEYS.templates.cardioNoWeight, vars);
       }
       if (item.durationMin !== null && !(item.durationMin > 0)) {
-        throw new ValidationError(`"${exercise.name}": los minutos deben ser mayores que 0.`);
+        throw new ValidationError(ERROR_KEYS.templates.durationPositive, vars);
       }
       if (item.distanceKm !== null && item.distanceKm < 0) {
-        throw new ValidationError(`"${exercise.name}": la distancia no puede ser negativa.`);
+        throw new ValidationError(ERROR_KEYS.templates.negativeDistance, vars);
       }
       return {
         exerciseId: item.exerciseId,
@@ -80,17 +82,17 @@ function normalizeTemplate(input: TemplateInput, exerciseMap: Map<number, Exerci
     }
 
     if (item.durationMin !== null || item.distanceKm !== null) {
-      throw new ValidationError(`"${exercise.name}": un ejercicio de pesas no lleva duración.`);
+      throw new ValidationError(ERROR_KEYS.templates.weightsNoDuration, vars);
     }
     const count = item.seriesCount ?? 1;
     if (!Number.isInteger(count) || count < 1 || count > MAX_SERIES) {
-      throw new ValidationError(`"${exercise.name}": las series deben estar entre 1 y ${MAX_SERIES}.`);
+      throw new ValidationError(ERROR_KEYS.templates.seriesRange, { name: exercise.name, max: MAX_SERIES });
     }
     if (item.defaultWeightKg !== null && (!Number.isFinite(item.defaultWeightKg) || item.defaultWeightKg < 0)) {
-      throw new ValidationError(`"${exercise.name}": peso por defecto inválido.`);
+      throw new ValidationError(ERROR_KEYS.templates.invalidDefaultWeight, vars);
     }
     if (item.defaultReps !== null && (!Number.isInteger(item.defaultReps) || item.defaultReps <= 0)) {
-      throw new ValidationError(`"${exercise.name}": repeticiones por defecto inválidas.`);
+      throw new ValidationError(ERROR_KEYS.templates.invalidDefaultReps, vars);
     }
     return {
       exerciseId: item.exerciseId,
@@ -116,7 +118,7 @@ async function assertNameFree(
     .from(templates)
     .where(and(eq(templates.userId, userId), eq(templates.name, name)));
   if (rows.some((row) => row.id !== exceptId)) {
-    throw new ValidationError('Ya tienes una plantilla con ese nombre.');
+    throw new ValidationError(ERROR_KEYS.templates.duplicateName);
   }
 }
 
@@ -183,7 +185,7 @@ export async function getTemplate(
     .from(templates)
     .where(and(eq(templates.id, templateId), eq(templates.userId, userId)));
   const template = rows[0];
-  if (!template) throw new NotFoundError('Plantilla no encontrada.');
+  if (!template) throw new NotFoundError(ERROR_KEYS.templates.notFound);
 
   const itemRows = await h.db
     .select({
@@ -257,7 +259,7 @@ export async function writeTemplate(
     })
     .returning({ id: templates.id });
   const row = inserted[0];
-  if (!row) throw new Error('No se pudo crear la plantilla.');
+  if (!row) throw new Error(ERROR_KEYS.db.createTemplate);
 
   await writeItems(h, row.id, data.items);
   return row.id;
@@ -273,7 +275,7 @@ export async function updateTemplate(
     .select({ id: templates.id })
     .from(templates)
     .where(and(eq(templates.id, templateId), eq(templates.userId, userId)));
-  if (existing.length === 0) throw new NotFoundError('Plantilla no encontrada.');
+  if (existing.length === 0) throw new NotFoundError(ERROR_KEYS.templates.notFound);
 
   const data = normalizeTemplate(input, await exercisesForItems(h, userId, input.items));
   await assertNameFree(h, userId, data.name, templateId);
@@ -297,7 +299,7 @@ export async function deleteTemplate(
     .select({ id: templates.id })
     .from(templates)
     .where(and(eq(templates.id, templateId), eq(templates.userId, userId)));
-  if (existing.length === 0) throw new NotFoundError('Plantilla no encontrada.');
+  if (existing.length === 0) throw new NotFoundError(ERROR_KEYS.templates.notFound);
 
   await withTransaction(h.exec, async () => {
     await h.db.delete(templateItems).where(eq(templateItems.templateId, templateId));

@@ -18,6 +18,7 @@ import {
 } from '../src/db/repositories/sessions';
 import { exportUserData, importUserData } from '../src/db/repositories/backup';
 import type { SessionInput } from '../src/shared/types';
+import { ERROR_KEYS } from '../src/shared/errors';
 
 let db: TestDb;
 
@@ -62,16 +63,16 @@ describe('usuarios', () => {
     expect(authenticated.id).toBe(user.id);
 
     await expect(authenticate(db.handle, 'ana@example.com', 'incorrecta')).rejects.toThrow(
-      /incorrectos/,
+      ERROR_KEYS.users.badCredentials,
     );
   });
 
   it('rechaza emails duplicados y contraseñas débiles', async () => {
     await makeUser('ana@example.com');
-    await expect(makeUser('ANA@example.com')).rejects.toThrow(/Ya existe/);
+    await expect(makeUser('ANA@example.com')).rejects.toThrow(ERROR_KEYS.users.emailTaken);
     await expect(
       createUser(db.handle, { email: 'b@example.com', name: 'Bea', password: 'corta' }),
-    ).rejects.toThrow(/8 caracteres/);
+    ).rejects.toThrow(ERROR_KEYS.users.passwordTooShort);
   });
 
   it('cambia la contraseña y borra el perfil conservando el catálogo global', async () => {
@@ -107,7 +108,9 @@ describe('catálogo de ejercicios', () => {
     expect(anaList.some((exercise) => exercise.id === own.id)).toBe(true);
     expect(luisList.some((exercise) => exercise.id === own.id)).toBe(false);
 
-    await expect(getExercise(db.handle, luis, own.id)).rejects.toThrow(/no encontrado/);
+    await expect(getExercise(db.handle, luis, own.id)).rejects.toThrow(
+      ERROR_KEYS.exercises.notFound,
+    );
   });
 
   it('no permite renombrar ni borrar ejercicios globales', async () => {
@@ -120,9 +123,11 @@ describe('catálogo de ejercicios', () => {
         type: 'weights',
         muscleGroup: 'pectorales',
       }),
-    ).rejects.toThrow(/propios/);
+    ).rejects.toThrow(ERROR_KEYS.exercises.ownEditOnly);
 
-    await expect(deleteExercise(db.handle, userId, bench.id)).rejects.toThrow(/propios/);
+    await expect(deleteExercise(db.handle, userId, bench.id)).rejects.toThrow(
+      ERROR_KEYS.exercises.ownDeleteOnly,
+    );
   });
 
   it('oculta un ejercicio propio en uso en lugar de borrarlo', async () => {
@@ -211,7 +216,7 @@ describe('sesiones', () => {
         notes: null,
         logs: [{ exerciseId: cardio.id, durationMin: null, distanceKm: null, sets: [] }],
       }),
-    ).rejects.toThrow(/minutos/);
+    ).rejects.toThrow(ERROR_KEYS.sessions.cardioNeedsDuration);
 
     await expect(
       saveSession(db.handle, userId, {
@@ -226,7 +231,7 @@ describe('sesiones', () => {
           },
         ],
       }),
-    ).rejects.toThrow(/no admite series/);
+    ).rejects.toThrow(ERROR_KEYS.sessions.cardioNoSets);
 
     await saveSession(db.handle, userId, {
       date: '2026-01-07',
@@ -249,7 +254,7 @@ describe('sesiones', () => {
         notes: null,
         logs: [{ exerciseId: bench.id, durationMin: null, distanceKm: null, sets: [] }],
       }),
-    ).rejects.toThrow(/al menos una serie/);
+    ).rejects.toThrow(ERROR_KEYS.sessions.weightsNeedSet);
 
     await expect(
       saveSession(db.handle, userId, {
@@ -264,7 +269,7 @@ describe('sesiones', () => {
           },
         ],
       }),
-    ).rejects.toThrow(/no lleva duración/);
+    ).rejects.toThrow(ERROR_KEYS.sessions.weightsNoDuration);
   });
 
   it('no permite usar el ejercicio propio de otro usuario', async () => {
@@ -278,7 +283,7 @@ describe('sesiones', () => {
 
     await expect(
       saveSession(db.handle, luis, weightsSession('2026-01-09', own.id)),
-    ).rejects.toThrow(/no existe o no es tuyo/);
+    ).rejects.toThrow(ERROR_KEYS.sessions.exerciseUnavailable);
   });
 
   it('lista el histórico ordenado y borra la sesión con sus series', async () => {

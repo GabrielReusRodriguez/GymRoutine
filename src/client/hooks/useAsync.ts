@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export interface AsyncState<T> {
   data: T | null;
   loading: boolean;
-  error: string | null;
+  error: unknown | null;
   reload: () => void;
 }
 
@@ -11,7 +11,7 @@ export interface AsyncState<T> {
 export function useAsync<T>(loader: () => Promise<T>, deps: unknown[]): AsyncState<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown | null>(null);
   const [nonce, setNonce] = useState(0);
   const loaderRef = useRef(loader);
   loaderRef.current = loader;
@@ -30,7 +30,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[]): AsyncSta
       })
       .catch((cause: unknown) => {
         if (!active) return;
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(cause);
         setLoading(false);
       });
 

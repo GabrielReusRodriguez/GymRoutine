@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
+import { LanguageSwitch } from '../components/LanguageSwitch';
 
 type Mode = 'login' | 'register';
 
 export function LoginPage() {
   const { login, register } = useAuth();
+  const { t, tError } = useI18n();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -20,7 +23,7 @@ export function LoginPage() {
       if (mode === 'login') await login(email, password);
       else await register({ email, name, password });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(tError(cause));
     } finally {
       setBusy(false);
     }
@@ -28,12 +31,15 @@ export function LoginPage() {
 
   return (
     <div className="auth-screen">
+      <div className="auth-lang">
+        <LanguageSwitch compact />
+      </div>
       <div className="card auth-card">
         <div className="auth-brand">
           <span className="brand-mark">GT</span>
           <div>
             <div style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Gym Tracker</div>
-            <div className="eyebrow">Tus datos viven en este navegador</div>
+            <div className="eyebrow">{t('login.tagline')}</div>
           </div>
         </div>
 
@@ -46,7 +52,7 @@ export function LoginPage() {
             }}
             type="button"
           >
-            Entrar
+            {t('login.signIn')}
           </button>
           <button
             className={`tab ${mode === 'register' ? 'active' : ''}`}
@@ -56,14 +62,14 @@ export function LoginPage() {
             }}
             type="button"
           >
-            Crear cuenta
+            {t('login.signUp')}
           </button>
         </div>
 
         <form className="stack" onSubmit={submit}>
           {mode === 'register' ? (
             <div className="field">
-              <label htmlFor="name">Nombre</label>
+              <label htmlFor="name">{t('login.name')}</label>
               <input
                 id="name"
                 className="input"
@@ -77,7 +83,7 @@ export function LoginPage() {
           ) : null}
 
           <div className="field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('login.email')}</label>
             <input
               id="email"
               type="email"
@@ -90,7 +96,7 @@ export function LoginPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Contraseña</label>
+            <label htmlFor="password">{t('login.password')}</label>
             <input
               id="password"
               type="password"
@@ -106,13 +112,16 @@ export function LoginPage() {
           {error ? <div className="alert">{error}</div> : null}
 
           <button className="btn btn-primary" type="submit" disabled={busy}>
-            {busy ? 'Comprobando…' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+            {busy
+              ? t('login.checking')
+              : mode === 'login'
+                ? t('login.signIn')
+                : t('login.signUp')}
           </button>
         </form>
 
         <p className="dim small" style={{ marginTop: 18 }}>
-          Las cuentas se guardan en la base de datos local de este navegador. No hay recuperación de
-          contraseña: si la pierdes, perderás el acceso a ese perfil.
+          {t('login.note')}
         </p>
       </div>
     </div>
