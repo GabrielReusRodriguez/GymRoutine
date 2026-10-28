@@ -1,6 +1,6 @@
 # Gym Tracker — Especificación técnica
 
-**Versión:** 2.0 · **Fecha:** 2026-10-27 · **Estado:** aprobada, pendiente de implementación
+**Versión:** 2.2 · **Fecha:** 2026-10-28 · **Estado:** implementada (fases 1–9); la fase 9 (idioma) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge
 
 Aplicación web para registrar entrenamientos de gimnasio: por cada día de entrenamiento se guarda la duración de cada ejercicio de cardio y el peso y las repeticiones (por series) de cada ejercicio de pesas. Desplegada en Cloudflare, con persistencia local en el navegador mediante SQLite WASM + OPFS y multiusuario mediante cuentas locales con contraseña.
 
@@ -18,6 +18,7 @@ Aplicación web para registrar entrenamientos de gimnasio: por cada día de entr
 | ORM | Drizzle ORM (driver sqlite-wasm) | Tipado + migraciones |
 | Contenido de ejercicios | Catálogo embebido (~60–80 ejercicios de fuerza) | Offline, sin API keys, mantenible |
 | Media del catálogo | SVG (figura del movimiento + diagrama muscular) | Ligero, offline, estilo consistente |
+| Idioma de la interfaz | Castellano (por defecto) y catalán, conmutables | Preferencia por perfil en `localStorage`, sin dependencias |
 
 ### Consecuencias aceptadas
 - **Los datos viven en el navegador**: cada navegador/dispositivo tiene su propia BD. No hay sync multi-dispositivo en v1; el export/import JSON es el puente manual.
@@ -36,7 +37,13 @@ Aplicación web para registrar entrenamientos de gimnasio: por cada día de entr
 | ORM | Drizzle ORM (driver sqlite-wasm) + migraciones embebidas |
 | Auth | Hash `argon2id` (WASM) del password; sesión activa en memoria + `localStorage` |
 | Gráficas | Chart.js (CDN) |
-| Tests | Vitest (repositorios sobre SQLite in-memory; lógica de stats; búsqueda fuzzy) |
+| i18n | Módulo propio `client/i18n` con diccionarios tipados (`es`, `ca`) | Sin dependencias nuevas; interfaz y errores en el idioma activo |
+| Tests | Vitest (repositorios sobre SQLite in-memory; lógica de stats; búsqueda fuzzy; i18n) |
+| Entorno | devcontainer (`.devcontainer/`) con Node 22 y dependencias instaladas | Node 22 es requisito real de Vite 8, Vitest 5 y Wrangler 4 |
+
+### 2.1 Entorno de desarrollo
+
+El repo incluye `.devcontainer/devcontainer.json` con la imagen `mcr.microsoft.com/devcontainers/typescript-node:22`. `postCreateCommand` ejecuta `npm install`, así que el proyecto se ejecuta y se prueba íntegramente dentro del contenedor: `npm run dev` (puerto 5173), `npm run worker:dev` (puerto 8787), `npm run test` y `npm run typecheck`. Vite se sirve con `host: true` y `strictPort: true` para que el reenvío de puertos funcione. No hace falta instalar Node ni dependencias en el host; con Node 18 `npm install` funciona pero Vite 8, Vitest 5 y Wrangler 4 no arrancan.
 
 ---
 
@@ -177,8 +184,10 @@ interface LibraryExercise {
 
 El enum `Muscle` es el mismo vocabulario del campo `muscle_group` de `exercises` → buscador, catálogo personal y estadísticas comparten terminología.
 
+**Contenido por idioma**: el dataset castellano es la fuente de los metadatos tipados (id, patrón, material, músculos, figura). `data/strength.ca.ts` aporta el contenido textual catalán indexado por `id` (nombre, alias, descripción y consejos). `localizeExercise()` fusiona ambas capas; los alias de los dos idiomas alimentan el buscador. Los datos ya guardados (seed del catálogo, sesiones y plantillas) no se traducen ni se migran: son datos del usuario.
+
 ### 6.2 Buscador
-- Input con **búsqueda fuzzy** sobre nombre + aliases + músculos + equipamiento (`match-sorter` o scoring propio, sin dependencias pesadas).
+- Input con **búsqueda fuzzy** sobre nombre + aliases + músculos + equipamiento (`match-sorter` o scoring propio, sin dependencias pesadas). Busca en el idioma activo (y en los alias originales) y también por las etiquetas traducidas de músculo y material.
 - Filtros facetados: patrón, equipamiento, músculo.
 - Resultados en grid de cards: figura SVG + músculos primarios como chips.
 
@@ -208,7 +217,7 @@ El enum `Muscle` es el mismo vocabulario del campo `muscle_group` de `exercises`
 5. **Catálogo** — CRUD de ejercicios propios; los globales no se borran (soft-hide).
 6. **Biblioteca** — buscador + detalle (sección 6).
 7. **Estadísticas** — véase sección 8.
-8. **Ajustes** — export/import JSON, cambiar password, borrar perfil.
+8. **Ajustes** — export/import JSON, cambiar password, borrar perfil y elegir el idioma de la interfaz.
 
 ### 7.1 Comportamiento de las plantillas
 
@@ -259,25 +268,44 @@ export default { fetch: app.fetch };
 
 ---
 
-## 11. Fuera de alcance v1
+## 11. Idioma de la interfaz
+
+La UI está disponible en **castellano** (por defecto) y **catalán**. No hay idioma por URL ni recarga: el cambio es inmediato.
+
+- **Preferencia**: `localStorage` (no hay columna en la BD porque es una preferencia de dispositivo, no un dato de entrenamiento).
+  - `gym-tracker.locale`: último idioma elegido (incluye la pantalla de login).
+  - `gym-tracker.locales`: mapa `{ [userId]: Locale }` para recordar el idioma de cada perfil.
+- **Resolución** al cargar y al entrar/salir de un perfil: idioma del perfil → idioma global → primer idioma del navegador que sea `ca` → castellano.
+- **Diccionarios**: `src/client/i18n/messages/es.ts` (referencia de claves) y `ca.ts`, tipado como la misma forma con valores `string`. TypeScript exige paridad exacta: una clave de menos o de más no compila. `t('grupo.clave', vars)` interpola `{placeholders}`.
+- **Errores de dominio**: los repositorios y el validador de backups lanzan `DomainError` con una clave de `ERROR_KEYS` (`src/shared/errors.ts`) y variables opcionales. La UI los pinta con `tError()`; nunca se muestra la clave en bruto. Los tests comparan con `ERROR_KEYS`.
+- **Fechas y números**: `Intl` con `es-ES` / `ca-ES` mediante `dateLong`, `dateShort`, `number` y `weight` de `useI18n()`.
+- **Biblioteca**: ver §6.1. El selector de idioma (`LanguageSwitch`) está en Ajustes, en el login y en la barra lateral.
+- **Fuera de alcance**: más idiomas, traducción automática y traducción de textos libres escritos por el usuario (notas, nombres de plantillas).
+
+---
+
+## 12. Fuera de alcance v1
 
 - Sincronización multi-dispositivo / servidor de datos (D1).
 - Cronómetro integrado.
 - Recuperación de contraseña (no existe servidor).
 - PWA instalable / app móvil.
-- Multi-idioma.
+- Más idiomas además del castellano y el catalán.
 
 ---
 
-## 12. Estructura del repo
+## 13. Estructura del repo
 
 ```
 gym/
+├── .devcontainer/         # entorno de desarrollo (Node 22 + dependencias)
 ├── src/
 │   ├── client/            # React
 │   │   ├── pages/         # una carpeta por pantalla (sección 7)
 │   │   ├── components/    # ExerciseFigure.tsx, MuscleDiagram.tsx, SeriesEditor.tsx, ...
-│   │   └── hooks/         # useDb(), useSession(), queries
+│   │   ├── hooks/         # useDb(), useSession(), queries
+│   │   ├── i18n/          # provider, persistencia del idioma y diccionarios es/ca
+│   │   └── lib/           # formato de fechas/números y utilidades de UI
 │   ├── db/
 │   │   ├── schema.ts      # Drizzle schema
 │   │   ├── migrations/    # migraciones embebidas
@@ -285,14 +313,16 @@ gym/
 │   │   ├── seed.ts        # catálogo global inicial
 │   │   └── client.ts      # apertura OPFS + lock de pestaña
 │   ├── library/           # biblioteca embebida
-│   │   ├── data/          # dataset de ejercicios (TS tipado)
-│   │   ├── search.ts      # búsqueda fuzzy
+│   │   ├── data/          # dataset de ejercicios (TS tipado) + traducción catalana
+│   │   ├── index.ts       # búsqueda fuzzy, filtros y localización
 │   │   └── sprites/       # SVGs: figuras de movimiento + silueta muscular
 │   ├── worker/
 │   │   └── index.ts       # Hono
 │   └── shared/
 │       ├── types.ts
 │       ├── stats.ts       # 1RM Epley, volumen, agregaciones
+│       ├── locale.ts      # Locale, etiquetas y detección desde el navegador
+│       ├── errors.ts      # DomainError y claves de error traducibles
 │       └── export.ts      # export/import JSON
 ├── tests/                 # Vitest
 ├── wrangler.toml
@@ -303,7 +333,7 @@ gym/
 
 ---
 
-## 13. Fases de implementación
+## 14. Fases de implementación
 
 1. **Scaffold**: Vite + React + Hono + wrangler; deploy "hello world" del Worker con assets.
 2. **BD**: cliente SQLite WASM/OPFS + Drizzle + migraciones embebidas + seed + repositorios con tests.
@@ -313,5 +343,6 @@ gym/
 6. **Estadísticas**: cálculos + Chart.js.
 7. **Pulido**: export/import JSON, estados vacíos, manejo de errores, revisión UI.
 8. **Plantillas de sesión**: tablas `templates`/`template_items`, repositorio con prellenado desde el último registro, pantalla de gestión y carga en la sesión.
+9. **Idioma de la interfaz**: castellano y catalán, preferencia por perfil en `localStorage`, diccionarios tipados, errores de dominio traducibles y biblioteca bilingüe.
 
 Cada fase debe dejar la app desplegable y usable; la 2 y la 3 son prerrequisito de todo lo demás.
