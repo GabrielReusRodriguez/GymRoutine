@@ -4,11 +4,14 @@ import { exportUserData, importUserData } from '../../db/repositories/backup';
 import { changePassword, deleteUser } from '../../db/repositories/users';
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
+import { useI18n } from '../i18n';
 import { IconDownload, IconUpload } from '../components/Icons';
+import { LanguageSwitch } from '../components/LanguageSwitch';
 
 export function SettingsPage() {
   const { user, logout } = useAuth();
   const handle = useDbHandle();
+  const { t, tError } = useI18n();
 
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -37,9 +40,9 @@ export function SettingsPage() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setDataMessage('Copia de seguridad descargada.');
+      setDataMessage(t('settings.exported'));
     } catch (cause) {
-      setDataError(cause instanceof Error ? cause.message : String(cause));
+      setDataError(tError(cause));
     } finally {
       setBusy(false);
     }
@@ -54,17 +57,24 @@ export function SettingsPage() {
       const backup = parseBackup(raw);
 
       const confirmed = window.confirm(
-        `Se reemplazarán TODOS los datos de ${user!.name} por los de la copia (${backup.sessions.length} sesiones, ${backup.templates?.length ?? 0} plantillas). Esta acción no se puede deshacer. ¿Continuar?`,
+        t('settings.importConfirm', {
+          name: user!.name,
+          sessions: backup.sessions.length,
+          templates: backup.templates?.length ?? 0,
+        }),
       );
       if (!confirmed) return;
 
       await importUserData(handle, user!.id, backup);
       setDataMessage(
-        `Importadas ${backup.sessions.length} sesiones y ${backup.templates?.length ?? 0} plantillas. Recargando…`,
+        t('settings.imported', {
+          sessions: backup.sessions.length,
+          templates: backup.templates?.length ?? 0,
+        }),
       );
       window.setTimeout(() => window.location.reload(), 900);
     } catch (cause) {
-      setDataError(cause instanceof Error ? cause.message : String(cause));
+      setDataError(tError(cause));
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -77,33 +87,29 @@ export function SettingsPage() {
     setPasswordMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('La confirmación no coincide.');
+      setPasswordError(t('settings.passwordMismatch'));
       return;
     }
 
     setBusy(true);
     try {
       await changePassword(handle, user!.id, currentPassword, newPassword);
-      setPasswordMessage('Contraseña actualizada.');
+      setPasswordMessage(t('settings.passwordUpdated'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (cause) {
-      setPasswordError(cause instanceof Error ? cause.message : String(cause));
+      setPasswordError(tError(cause));
     } finally {
       setBusy(false);
     }
   };
 
   const removeProfile = async () => {
-    if (
-      !window.confirm(
-        `Se borrarán la cuenta ${user!.email} y todos sus entrenamientos de este navegador. ¿Continuar?`,
-      )
-    ) {
+    if (!window.confirm(t('settings.deleteConfirm', { email: user!.email }))) {
       return;
     }
-    if (!window.confirm('Última confirmación: esta acción es irreversible. ¿Borrar el perfil?')) {
+    if (!window.confirm(t('settings.deleteFinal'))) {
       return;
     }
 
@@ -111,7 +117,7 @@ export function SettingsPage() {
       await deleteUser(handle, user!.id);
       logout();
     } catch (cause) {
-      window.alert(cause instanceof Error ? cause.message : String(cause));
+      window.alert(tError(cause));
     }
   };
 
@@ -119,28 +125,35 @@ export function SettingsPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Ajustes</div>
-          <h1>Tu cuenta y tus datos</h1>
+          <div className="eyebrow">{t('settings.eyebrow')}</div>
+          <h1>{t('settings.title')}</h1>
           <p>
             {user!.name} · {user!.email}
           </p>
         </div>
       </div>
 
+      <div className="card card-pad" style={{ marginBottom: 16 }}>
+        <h2>{t('settings.language')}</h2>
+        <p className="muted small" style={{ marginTop: 4, marginBottom: 14 }}>
+          {t('settings.languageHelp')}
+        </p>
+        <LanguageSwitch />
+      </div>
+
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
         <div className="card card-pad">
-          <h2>Copia de seguridad</h2>
+          <h2>{t('settings.backupTitle')}</h2>
           <p className="muted small" style={{ marginTop: 4, marginBottom: 14 }}>
-            Tus datos solo existen en este navegador. Exporta un JSON con regularidad: es la única
-            forma de recuperarlos si borras los datos del navegador o cambias de dispositivo.
+            {t('settings.backupHelp')}
           </p>
 
           <div className="row" style={{ gap: 8 }}>
             <button className="btn btn-primary" onClick={exportData} disabled={busy}>
-              <IconDownload /> Exportar JSON
+              <IconDownload /> {t('settings.export')}
             </button>
             <button className="btn" onClick={() => fileInput.current?.click()} disabled={busy}>
-              <IconUpload /> Importar JSON
+              <IconUpload /> {t('settings.import')}
             </button>
             <input
               ref={fileInput}
@@ -155,7 +168,7 @@ export function SettingsPage() {
           </div>
 
           <p className="dim small" style={{ marginTop: 12 }}>
-            La importación reemplaza los datos del perfil activo (no hace merge).
+            {t('settings.importReplaces')}
           </p>
 
           {dataMessage ? <div className="alert alert-success" style={{ marginTop: 12 }}>{dataMessage}</div> : null}
@@ -163,10 +176,10 @@ export function SettingsPage() {
         </div>
 
         <div className="card card-pad">
-          <h2>Cambiar contraseña</h2>
+          <h2>{t('settings.passwordTitle')}</h2>
           <form className="stack" style={{ marginTop: 12 }} onSubmit={submitPassword}>
             <div className="field">
-              <label htmlFor="current-password">Contraseña actual</label>
+              <label htmlFor="current-password">{t('settings.currentPassword')}</label>
               <input
                 id="current-password"
                 className="input"
@@ -178,7 +191,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="new-password">Nueva contraseña</label>
+              <label htmlFor="new-password">{t('settings.newPassword')}</label>
               <input
                 id="new-password"
                 className="input"
@@ -191,7 +204,7 @@ export function SettingsPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="confirm-password">Repite la nueva contraseña</label>
+              <label htmlFor="confirm-password">{t('settings.repeatPassword')}</label>
               <input
                 id="confirm-password"
                 className="input"
@@ -208,20 +221,19 @@ export function SettingsPage() {
             {passwordMessage ? <div className="alert alert-success">{passwordMessage}</div> : null}
 
             <button className="btn" type="submit" disabled={busy}>
-              Actualizar contraseña
+              {t('settings.updatePassword')}
             </button>
           </form>
         </div>
       </div>
 
       <div className="card card-pad" style={{ marginTop: 16, borderColor: 'rgba(255,107,107,0.25)' }}>
-        <h2>Zona de peligro</h2>
+        <h2>{t('settings.dangerTitle')}</h2>
         <p className="muted small" style={{ marginTop: 4, marginBottom: 14 }}>
-          Borrar el perfil elimina la cuenta y todos sus entrenamientos de este navegador. El
-          catálogo global se conserva. No hay vuelta atrás sin una copia de seguridad.
+          {t('settings.dangerHelp')}
         </p>
         <button className="btn btn-danger" onClick={removeProfile}>
-          Borrar mi perfil y mis datos
+          {t('settings.deleteProfile')}
         </button>
       </div>
     </>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { SetEntry } from '../../shared/types';
+import { useI18n } from '../i18n';
 import { IconPlus, IconTrash } from './Icons';
 
 interface RawSet {
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function SeriesEditor({ sets, onChange }: Props) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<RawSet[]>(() => toRaw(sets));
 
   const commit = (next: RawSet[]) => {
@@ -50,8 +52,8 @@ export function SeriesEditor({ sets, onChange }: Props) {
         <thead>
           <tr>
             <th style={{ width: 34 }}>#</th>
-            <th>Peso (kg)</th>
-            <th>Reps</th>
+            <th>{t('series.weight')}</th>
+            <th>{t('series.reps')}</th>
             <th style={{ width: 32 }} />
           </tr>
         </thead>
@@ -66,7 +68,7 @@ export function SeriesEditor({ sets, onChange }: Props) {
                   placeholder="0"
                   value={row.weight}
                   onChange={(event) => update(index, 'weight', event.target.value)}
-                  aria-label={`Peso serie ${index + 1}`}
+                  aria-label={t('series.weightAria', { index: index + 1 })}
                 />
               </td>
               <td>
@@ -76,7 +78,7 @@ export function SeriesEditor({ sets, onChange }: Props) {
                   placeholder="0"
                   value={row.reps}
                   onChange={(event) => update(index, 'reps', event.target.value)}
-                  aria-label={`Repeticiones serie ${index + 1}`}
+                  aria-label={t('series.repsAria', { index: index + 1 })}
                 />
               </td>
               <td>
@@ -84,7 +86,7 @@ export function SeriesEditor({ sets, onChange }: Props) {
                   className="btn btn-ghost btn-icon"
                   onClick={() => commit(rows.filter((_, rowIndex) => rowIndex !== index))}
                   disabled={rows.length === 1}
-                  aria-label="Quitar serie"
+                  aria-label={t('series.removeAria')}
                 >
                   <IconTrash width={15} height={15} />
                 </button>
@@ -99,7 +101,7 @@ export function SeriesEditor({ sets, onChange }: Props) {
         style={{ marginTop: 6 }}
         onClick={() => commit([...rows, { weight: rows.at(-1)?.weight ?? '', reps: rows.at(-1)?.reps ?? '' }])}
       >
-        <IconPlus width={15} height={15} /> Añadir serie
+        <IconPlus width={15} height={15} /> {t('series.add')}
       </button>
     </div>
   );

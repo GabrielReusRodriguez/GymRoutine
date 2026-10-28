@@ -4,22 +4,23 @@ import type { Exercise } from '../schema';
 import { exerciseLogs, exercises, templateItems } from '../schema';
 import type { ExerciseInput } from '../../shared/types';
 import { MUSCLES } from '../../library/types';
+import { ERROR_KEYS } from '../../shared/errors';
 import { NotFoundError, ValidationError } from './errors';
 
 function normalizeInput(input: ExerciseInput): ExerciseInput {
   const name = input.name.trim();
-  if (name.length < 2) throw new ValidationError('El nombre del ejercicio es demasiado corto.');
+  if (name.length < 2) throw new ValidationError(ERROR_KEYS.exercises.nameTooShort);
   if (input.type !== 'cardio' && input.type !== 'weights') {
-    throw new ValidationError('Tipo de ejercicio inválido.');
+    throw new ValidationError(ERROR_KEYS.exercises.typeInvalid);
   }
   if (!MUSCLES.includes(input.muscleGroup) && input.muscleGroup !== 'cardio') {
-    throw new ValidationError('Grupo muscular inválido.');
+    throw new ValidationError(ERROR_KEYS.exercises.muscleInvalid);
   }
   if (input.type === 'cardio' && input.muscleGroup !== 'cardio') {
-    throw new ValidationError('Los ejercicios de cardio deben usar el grupo "cardio".');
+    throw new ValidationError(ERROR_KEYS.exercises.cardioGroup);
   }
   if (input.type === 'weights' && input.muscleGroup === 'cardio') {
-    throw new ValidationError('Elige un grupo muscular para el ejercicio de pesas.');
+    throw new ValidationError(ERROR_KEYS.exercises.weightsGroup);
   }
   return {
     name,
@@ -77,7 +78,7 @@ export async function getExercise(
     .from(exercises)
     .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, userId))));
   const row = rows[0];
-  if (!row) throw new NotFoundError('Ejercicio no encontrado.');
+  if (!row) throw new NotFoundError(ERROR_KEYS.exercises.notFound);
   return row;
 }
 
@@ -92,7 +93,7 @@ export async function createExercise(
     .from(exercises)
     .where(and(eq(exercises.userId, userId), eq(exercises.name, data.name)));
   if (duplicate.length > 0) {
-    throw new ValidationError('Ya tienes un ejercicio con ese nombre.');
+    throw new ValidationError(ERROR_KEYS.exercises.duplicateName);
   }
 
   const inserted = await h.db
@@ -110,7 +111,7 @@ export async function createExercise(
     .returning();
 
   const created = inserted[0];
-  if (!created) throw new Error('No se pudo crear el ejercicio.');
+  if (!created) throw new Error(ERROR_KEYS.db.createExercise);
   return created;
 }
 
@@ -133,7 +134,7 @@ export async function updateExercise(
     .returning();
 
   const row = updated[0];
-  if (!row) throw new NotFoundError('Solo puedes editar ejercicios propios.');
+  if (!row) throw new NotFoundError(ERROR_KEYS.exercises.ownEditOnly);
   return row;
 }
 
@@ -151,7 +152,7 @@ export async function deleteExercise(
     .from(exercises)
     .where(and(eq(exercises.id, exerciseId), eq(exercises.userId, userId)));
   const exercise = rows[0];
-  if (!exercise) throw new NotFoundError('Solo puedes borrar ejercicios propios.');
+  if (!exercise) throw new NotFoundError(ERROR_KEYS.exercises.ownDeleteOnly);
 
   const used = await h.db
     .select({ id: exerciseLogs.id })

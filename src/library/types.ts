@@ -1,3 +1,5 @@
+import type { Locale } from '../shared/locale';
+
 /**
  * Vocabulario compartido entre la biblioteca embebida, el catálogo del
  * usuario y el diagrama muscular.
@@ -45,36 +47,68 @@ export const MUSCLES: Muscle[] = [
   'aductores',
 ];
 
-export const MUSCLE_LABELS: Record<Muscle, string> = {
-  pectorales: 'Pectorales',
-  'deltoides-anterior': 'Deltoides anterior',
-  'deltoides-lateral': 'Deltoides lateral',
-  'deltoides-posterior': 'Deltoides posterior',
-  biceps: 'Bíceps',
-  triceps: 'Tríceps',
-  antebrazo: 'Antebrazo',
-  'recto-abdominal': 'Recto abdominal',
-  oblicuos: 'Oblicuos',
-  erectores: 'Erectores espinales',
-  gluteo: 'Glúteos',
-  cuadriceps: 'Cuádriceps',
-  isquios: 'Isquiotibiales',
-  gemelo: 'Gemelos',
-  trapecio: 'Trapecio',
-  dorsal: 'Dorsal ancho',
-  aductores: 'Aductores',
-  cardio: 'Cardio',
+export const MUSCLE_LABELS: Record<Locale, Record<Muscle, string>> = {
+  es: {
+    pectorales: 'Pectorales',
+    'deltoides-anterior': 'Deltoides anterior',
+    'deltoides-lateral': 'Deltoides lateral',
+    'deltoides-posterior': 'Deltoides posterior',
+    biceps: 'Bíceps',
+    triceps: 'Tríceps',
+    antebrazo: 'Antebrazo',
+    'recto-abdominal': 'Recto abdominal',
+    oblicuos: 'Oblicuos',
+    erectores: 'Erectores espinales',
+    gluteo: 'Glúteos',
+    cuadriceps: 'Cuádriceps',
+    isquios: 'Isquiotibiales',
+    gemelo: 'Gemelos',
+    trapecio: 'Trapecio',
+    dorsal: 'Dorsal ancho',
+    aductores: 'Aductores',
+    cardio: 'Cardio',
+  },
+  ca: {
+    pectorales: 'Pectorals',
+    'deltoides-anterior': 'Deltoides anterior',
+    'deltoides-lateral': 'Deltoides lateral',
+    'deltoides-posterior': 'Deltoides posterior',
+    biceps: 'Bíceps',
+    triceps: 'Tríceps',
+    antebrazo: 'Avantbraç',
+    'recto-abdominal': 'Recte abdominal',
+    oblicuos: 'Oblics',
+    erectores: 'Erectors espinals',
+    gluteo: 'Glutis',
+    cuadriceps: 'Quàdriceps',
+    isquios: 'Isquiotibials',
+    gemelo: 'Bessons',
+    trapecio: 'Trapezi',
+    dorsal: 'Dorsal ample',
+    aductores: 'Adductors',
+    cardio: 'Cardio',
+  },
 };
 
 export type MovementPattern = 'push' | 'pull' | 'squat' | 'hinge' | 'carry' | 'core';
 
-export const PATTERN_LABELS: Record<MovementPattern, string> = {
-  push: 'Empuje',
-  pull: 'Tracción',
-  squat: 'Sentadilla',
-  hinge: 'Bisagra de cadera',
-  carry: 'Carga',
-  core: 'Core',
+export const PATTERN_LABELS: Record<Locale, Record<MovementPattern, string>> = {
+  es: {
+    push: 'Empuje',
+    pull: 'Tracción',
+    squat: 'Sentadilla',
+    hinge: 'Bisagra de cadera',
+    carry: 'Carga',
+    core: 'Core',
+  },
+  ca: {
+    push: 'Impuls',
+    pull: 'Tracció',
+    squat: 'Esquat',
+    hinge: 'Frontissa de maluc',
+    carry: 'Càrrega',
+    core: 'Core',
+  },
 };
 
 export type Equipment =
@@ -85,13 +119,23 @@ export type Equipment =
   | 'bodyweight'
   | 'kettlebell';
 
-export const EQUIPMENT_LABELS: Record<Equipment, string> = {
-  barbell: 'Barra',
-  dumbbell: 'Mancuernas',
-  machine: 'Máquina',
-  cable: 'Polea',
-  bodyweight: 'Peso corporal',
-  kettlebell: 'Kettlebell',
+export const EQUIPMENT_LABELS: Record<Locale, Record<Equipment, string>> = {
+  es: {
+    barbell: 'Barra',
+    dumbbell: 'Mancuernas',
+    machine: 'Máquina',
+    cable: 'Polea',
+    bodyweight: 'Peso corporal',
+    kettlebell: 'Kettlebell',
+  },
+  ca: {
+    barbell: 'Barra',
+    dumbbell: 'Mancuernes',
+    machine: 'Màquina',
+    cable: 'Politja',
+    bodyweight: 'Pes corporal',
+    kettlebell: 'Kettlebell',
+  },
 };
 
 /** Identificadores de figura disponibles en src/client/components/ExerciseFigure.tsx. */
@@ -151,6 +195,22 @@ export interface CardioSeed {
   notes?: string;
 }
 
-export function muscleLabel(muscle: Muscle): string {
-  return MUSCLE_LABELS[muscle] ?? muscle;
+/** Contenido localizado de un ejercicio de la biblioteca. */
+export interface LibraryTranslation {
+  name: string;
+  aliases: string[];
+  description: string;
+  tips: string[];
+}
+
+export function muscleLabel(muscle: Muscle, locale: Locale = 'es'): string {
+  return MUSCLE_LABELS[locale][muscle] ?? muscle;
+}
+
+export function patternLabel(pattern: MovementPattern, locale: Locale = 'es'): string {
+  return PATTERN_LABELS[locale][pattern] ?? pattern;
+}
+
+export function equipmentLabel(equipment: Equipment, locale: Locale = 'es'): string {
+  return EQUIPMENT_LABELS[locale][equipment] ?? equipment;
 }

@@ -21,6 +21,7 @@ import {
 } from '../src/db/repositories/templates';
 import { exportUserData, importUserData } from '../src/db/repositories/backup';
 import type { TemplateInput } from '../src/shared/types';
+import { ERROR_KEYS } from '../src/shared/errors';
 
 let db: TestDb;
 
@@ -120,15 +121,19 @@ describe('plantillas', () => {
     });
 
     expect(await listTemplates(db.handle, intruder)).toHaveLength(0);
-    await expect(getTemplate(db.handle, intruder, templateId)).rejects.toThrow(/no encontrada/i);
+    await expect(getTemplate(db.handle, intruder, templateId)).rejects.toThrow(
+      ERROR_KEYS.templates.notFound,
+    );
     await expect(
       updateTemplate(db.handle, intruder, templateId, {
         name: 'Robada',
         notes: null,
         items: [weightsItem(press.id)],
       }),
-    ).rejects.toThrow(/no encontrada/i);
-    await expect(deleteTemplate(db.handle, intruder, templateId)).rejects.toThrow(/no encontrada/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.notFound);
+    await expect(deleteTemplate(db.handle, intruder, templateId)).rejects.toThrow(
+      ERROR_KEYS.templates.notFound,
+    );
   });
 
   it('valida nombre, items y coherencia cardio/pesas', async () => {
@@ -138,11 +143,11 @@ describe('plantillas', () => {
 
     await expect(
       createTemplate(db.handle, userId, { name: 'A', notes: null, items: [weightsItem(press.id)] }),
-    ).rejects.toThrow(/nombre/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.nameTooShort);
 
     await expect(
       createTemplate(db.handle, userId, { name: 'Vacía', notes: null, items: [] }),
-    ).rejects.toThrow(/al menos un ejercicio/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.empty);
 
     await expect(
       createTemplate(db.handle, userId, {
@@ -150,7 +155,7 @@ describe('plantillas', () => {
         notes: null,
         items: [{ ...cardioItem(run.id), seriesCount: 3 }],
       }),
-    ).rejects.toThrow(/cardio no lleva series/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.cardioNoSeries);
 
     await expect(
       createTemplate(db.handle, userId, {
@@ -158,7 +163,7 @@ describe('plantillas', () => {
         notes: null,
         items: [{ ...weightsItem(press.id), durationMin: 20 }],
       }),
-    ).rejects.toThrow(/no lleva duración/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.weightsNoDuration);
 
     await expect(
       createTemplate(db.handle, userId, {
@@ -166,7 +171,7 @@ describe('plantillas', () => {
         notes: null,
         items: [weightsItem(press.id, 0)],
       }),
-    ).rejects.toThrow(/series deben estar entre/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.seriesRange);
 
     await createTemplate(db.handle, userId, {
       name: 'Repetida',
@@ -175,14 +180,14 @@ describe('plantillas', () => {
     });
     await expect(
       createTemplate(db.handle, userId, { name: 'Repetida', notes: null, items: [weightsItem(press.id)] }),
-    ).rejects.toThrow(/ya tienes una plantilla/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.duplicateName);
     await expect(
       createTemplate(db.handle, userId, {
         name: 'Duplicada por dentro',
         notes: null,
         items: [weightsItem(press.id), weightsItem(press.id)],
       }),
-    ).rejects.toThrow(/repetido/i);
+    ).rejects.toThrow(ERROR_KEYS.templates.exerciseDuplicated);
   });
 
   it('duplica con un nombre libre y los mismos items', async () => {

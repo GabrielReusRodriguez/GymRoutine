@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { normalize, searchLibrary, STRENGTH_LIBRARY } from '../src/library';
+import {
+  getLibraryExercise,
+  normalize,
+  searchLibrary,
+  STRENGTH_LIBRARY,
+  STRENGTH_LIBRARY_CA,
+} from '../src/library';
 
 describe('biblioteca de ejercicios', () => {
   it('tiene al menos 50 ejercicios con datos completos', () => {
@@ -47,5 +53,43 @@ describe('biblioteca de ejercicios', () => {
 
   it('devuelve lista vacía si no hay coincidencias', () => {
     expect(searchLibrary({ query: 'xyz-no-existe' })).toEqual([]);
+  });
+});
+
+describe('biblioteca en catalán', () => {
+  it('traduce todos los ejercicios de fuerza con contenido completo', () => {
+    for (const exercise of STRENGTH_LIBRARY) {
+      const translation = STRENGTH_LIBRARY_CA[exercise.id];
+      expect(translation, exercise.id).toBeDefined();
+      expect(translation!.name.length).toBeGreaterThan(0);
+      expect(translation!.description.length).toBeGreaterThan(30);
+      expect(translation!.aliases.length).toBeGreaterThan(0);
+      expect(translation!.tips.length).toBeGreaterThan(0);
+    }
+    expect(Object.keys(STRENGTH_LIBRARY_CA)).toHaveLength(STRENGTH_LIBRARY.length);
+  });
+
+  it('localiza nombre, descripción y consejos conservando los metadatos', () => {
+    const localized = getLibraryExercise('barbell-bench-press', 'ca');
+    expect(localized?.name).toBe('Press de banca amb barra');
+    expect(localized?.pattern).toBe('push');
+    expect(localized?.equipment).toBe('barbell');
+    expect(localized?.media.figure).toBe('bench-press');
+
+    const original = getLibraryExercise('barbell-bench-press', 'es');
+    expect(original?.name).toBe('Press banca con barra');
+    expect(original?.description).not.toBe(localized?.description);
+  });
+
+  it('busca por nombre, alias y músculo en catalán', () => {
+    const squat = searchLibrary({ query: 'esquat', locale: 'ca' });
+    expect(squat.some((exercise) => exercise.id === 'back-squat')).toBe(true);
+    expect(squat[0]!.name.toLowerCase()).toContain('esquat');
+
+    const bench = searchLibrary({ query: 'banca', locale: 'ca' });
+    expect(bench[0]!.id).toBe('barbell-bench-press');
+
+    const quads = searchLibrary({ query: 'quadriceps', locale: 'ca' });
+    expect(quads.some((exercise) => exercise.id === 'leg-extension')).toBe(true);
   });
 });

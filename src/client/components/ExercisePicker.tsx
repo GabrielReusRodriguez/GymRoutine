@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Exercise } from '../../db/schema';
 import { MUSCLES, MUSCLE_LABELS } from '../../library/types';
 import { normalize } from '../../library';
+import { useI18n } from '../i18n';
 import { IconSearch, IconX } from './Icons';
 
 interface Props {
@@ -11,7 +12,8 @@ interface Props {
   title?: string;
 }
 
-export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ejercicio' }: Props) {
+export function ExercisePicker({ exercises, onPick, onClose, title }: Props) {
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState('');
   const [type, setType] = useState<'all' | 'weights' | 'cardio'>('all');
   const [muscle, setMuscle] = useState('');
@@ -42,8 +44,8 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-head">
-          <h2>{title}</h2>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Cerrar">
+          <h2>{title ?? t('exercisePicker.title')}</h2>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label={t('common.close')}>
             <IconX />
           </button>
         </div>
@@ -57,7 +59,7 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
               <input
                 className="input"
                 style={{ paddingLeft: 36 }}
-                placeholder="Buscar ejercicio…"
+                placeholder={t('exercisePicker.search')}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 autoFocus
@@ -67,9 +69,9 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
             <div className="row" style={{ gap: 6 }}>
               {(
                 [
-                  ['all', 'Todos'],
-                  ['weights', 'Pesas'],
-                  ['cardio', 'Cardio'],
+                  ['all', t('common.all')],
+                  ['weights', t('type.weights')],
+                  ['cardio', t('type.cardio')],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -86,10 +88,10 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
                 value={muscle}
                 onChange={(event) => setMuscle(event.target.value)}
               >
-                <option value="">Todo el cuerpo</option>
+                <option value="">{t('exercisePicker.allMuscles')}</option>
                 {MUSCLES.map((item) => (
                   <option key={item} value={item}>
-                    {MUSCLE_LABELS[item]}
+                    {MUSCLE_LABELS[locale][item]}
                   </option>
                 ))}
               </select>
@@ -98,7 +100,7 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
             <div style={{ maxHeight: '46vh', overflow: 'auto', marginTop: 4 }}>
               {results.length === 0 ? (
                 <p className="muted small" style={{ padding: 18, textAlign: 'center' }}>
-                  Sin resultados. Puedes crear ejercicios propios en Catálogo.
+                  {t('exercisePicker.empty')}
                 </p>
               ) : (
                 results.map((exercise) => (
@@ -110,10 +112,12 @@ export function ExercisePicker({ exercises, onPick, onClose, title = 'Añadir ej
                     <span>
                       <strong style={{ fontWeight: 550 }}>{exercise.name}</strong>
                       <span className="dim small" style={{ marginLeft: 8 }}>
-                        {exercise.userId !== null ? 'propio' : 'global'}
+                        {exercise.userId !== null ? t('common.own') : t('common.global')}
                       </span>
                     </span>
-                    <span className="badge">{exercise.type === 'cardio' ? 'Cardio' : 'Pesas'}</span>
+                    <span className="badge">
+                      {exercise.type === 'cardio' ? t('type.cardio') : t('type.weights')}
+                    </span>
                   </button>
                 ))
               )}

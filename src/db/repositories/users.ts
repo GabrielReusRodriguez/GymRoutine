@@ -3,6 +3,7 @@ import type { DbHandle } from '..';
 import type { UserSummary } from '../../shared/types';
 import { hashPassword, verifyPassword } from '../../auth/password';
 import { exerciseLogs, exercises, series, sessions, templateItems, templates, users } from '../schema';
+import { ERROR_KEYS } from '../../shared/errors';
 import { AuthError, ConflictError, NotFoundError, ValidationError } from './errors';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,14 +26,14 @@ export async function createUser(h: DbHandle, input: CreateUserInput): Promise<U
   const email = normalizeEmail(input.email);
   const name = input.name.trim();
 
-  if (!EMAIL_RE.test(email)) throw new ValidationError('El email no es válido.');
-  if (name.length < 2) throw new ValidationError('El nombre debe tener al menos 2 caracteres.');
+  if (!EMAIL_RE.test(email)) throw new ValidationError(ERROR_KEYS.users.emailInvalid);
+  if (name.length < 2) throw new ValidationError(ERROR_KEYS.users.nameTooShort);
   if (input.password.length < 8) {
-    throw new ValidationError('La contraseña debe tener al menos 8 caracteres.');
+    throw new ValidationError(ERROR_KEYS.users.passwordTooShort);
   }
 
   const existing = await h.db.select({ id: users.id }).from(users).where(eq(users.email, email));
-  if (existing.length > 0) throw new ConflictError('Ya existe una cuenta con ese email.');
+  if (existing.length > 0) throw new ConflictError(ERROR_KEYS.users.emailTaken);
 
   const passwordHash = await hashPassword(input.password);
   const inserted = await h.db
@@ -41,7 +42,7 @@ export async function createUser(h: DbHandle, input: CreateUserInput): Promise<U
     .returning({ id: users.id, email: users.email, name: users.name });
 
   const created = inserted[0];
-  if (!created) throw new Error('No se pudo crear el usuario.');
+  if (!created) throw new Error(ERROR_KEYS.db.createUser);
   return summary(created);
 }
 
@@ -53,10 +54,10 @@ export async function authenticate(
   const rows = await h.db.select().from(users).where(eq(users.email, normalizeEmail(email)));
 
   const row = rows[0];
-  if (!row) throw new AuthError('Email o contraseña incorrectos.');
+  if (!row) throw new AuthError(ERROR_KEYS.users.badCredentials);
 
   const valid = await verifyPassword(password, row.passwordHash);
-  if (!valid) throw new AuthError('Email o contraseña incorrectos.');
+  if (!valid) throw new AuthError(ERROR_KEYS.users.badCredentials);
 
   return summary(row);
 }
@@ -75,12 +76,12 @@ export async function changePassword(
 ): Promise<void> {
   const rows = await h.db.select().from(users).where(eq(users.id, userId));
   const row = rows[0];
-  if (!row) throw new NotFoundError('Usuario no encontrado.');
+  if (!row) throw new NotFoundError(ERROR_KEYS.users.notFound);
 
   const valid = await verifyPassword(currentPassword, row.passwordHash);
-  if (!valid) throw new AuthError('La contraseña actual no es correcta.');
+  if (!valid) throw new AuthError(ERROR_KEYS.users.wrongPassword);
   if (newPassword.length < 8) {
-    throw new ValidationError('La nueva contraseña debe tener al menos 8 caracteres.');
+    throw new ValidationError(ERROR_KEYS.users.newPasswordTooShort);
   }
 
   const passwordHash = await hashPassword(newPassword);

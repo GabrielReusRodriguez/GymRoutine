@@ -23,7 +23,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
-import { formatDateShort, formatNumber } from '../lib/format';
+import { useI18n } from '../i18n';
 
 ChartJS.register(
   CategoryScale,
@@ -73,6 +73,7 @@ function daysAgo(days: number): string {
 export function StatsPage() {
   const { user } = useAuth();
   const handle = useDbHandle();
+  const { t, tError, dateShort, number } = useI18n();
   const [range, setRange] = useState<'30' | '90' | '365' | 'all'>('90');
   const [exerciseId, setExerciseId] = useState<number | null>(null);
 
@@ -124,24 +125,24 @@ export function StatsPage() {
     0,
   );
 
-  const weekLabels = volume.map((point) => formatDateShort(point.week));
+  const weekLabels = volume.map((point) => dateShort(point.week));
 
   return (
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Estadísticas</div>
-          <h1>Progreso</h1>
-          <p>Volumen, 1RM estimado (Epley) y cardio por semana.</p>
+          <div className="eyebrow">{t('stats.eyebrow')}</div>
+          <h1>{t('stats.title')}</h1>
+          <p>{t('stats.intro')}</p>
         </div>
 
         <div className="row" style={{ gap: 6 }}>
           {(
             [
-              ['30', '30 días'],
-              ['90', '90 días'],
-              ['365', '1 año'],
-              ['all', 'Todo'],
+              ['30', t('range.days30')],
+              ['90', t('range.days90')],
+              ['365', t('range.year')],
+              ['all', t('common.all')],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -155,43 +156,43 @@ export function StatsPage() {
         </div>
       </div>
 
-      {sessions.error ? <div className="alert">{sessions.error}</div> : null}
+      {sessions.error ? <div className="alert">{tError(sessions.error)}</div> : null}
 
       {data.length === 0 && !sessions.loading ? (
         <div className="empty">
-          <p style={{ fontWeight: 600, color: 'var(--text)' }}>Sin datos en este periodo</p>
+          <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('stats.emptyTitle')}</p>
           <p className="small" style={{ marginTop: 4 }}>
-            Registra sesiones para ver tu progreso.
+            {t('stats.emptyBody')}
           </p>
         </div>
       ) : (
         <>
           <div className="grid grid-3" style={{ marginBottom: 16 }}>
             <div className="card card-pad">
-              <div className="stat-label">Sesiones</div>
+              <div className="stat-label">{t('stats.sessions')}</div>
               <div className="stat-value">{data.length}</div>
             </div>
             <div className="card card-pad">
-              <div className="stat-label">Volumen de pesas</div>
-              <div className="stat-value">{formatNumber(totalVolume)}</div>
-              <div className="small dim">kg levantados en total</div>
+              <div className="stat-label">{t('stats.volume')}</div>
+              <div className="stat-value">{number(totalVolume)}</div>
+              <div className="small dim">{t('stats.volumeHint')}</div>
             </div>
             <div className="card card-pad">
-              <div className="stat-label">Cardio</div>
-              <div className="stat-value">{formatNumber(totalCardio)}</div>
-              <div className="small dim">minutos acumulados</div>
+              <div className="stat-label">{t('stats.cardio')}</div>
+              <div className="stat-value">{number(totalCardio)}</div>
+              <div className="small dim">{t('stats.cardioHint')}</div>
             </div>
           </div>
 
           <div className="grid grid-2">
             <div className="card card-pad">
               <div className="row-between" style={{ marginBottom: 10 }}>
-                <h2>Volumen semanal</h2>
-                <span className="badge">Σ peso × reps</span>
+                <h2>{t('stats.weeklyVolume')}</h2>
+                <span className="badge">{t('stats.sumFormula')}</span>
               </div>
               <div className="chart-box">
                 {volume.length === 0 ? (
-                  <p className="muted small">Sin sesiones de pesas en el periodo.</p>
+                  <p className="muted small">{t('stats.noWeights')}</p>
                 ) : (
                   <Bar
                     data={{
@@ -216,19 +217,19 @@ export function StatsPage() {
 
             <div className="card card-pad">
               <div className="row-between" style={{ marginBottom: 10 }}>
-                <h2>Cardio semanal</h2>
-                <span className="badge">min · km</span>
+                <h2>{t('stats.weeklyCardio')}</h2>
+                <span className="badge">{t('stats.cardioUnits')}</span>
               </div>
               <div className="chart-box">
                 {minutes.length === 0 && distance.length === 0 ? (
-                  <p className="muted small">Sin cardio en el periodo.</p>
+                  <p className="muted small">{t('stats.noCardio')}</p>
                 ) : (
                   <Bar
                     data={{
-                      labels: minutes.map((point) => formatDateShort(point.week)),
+                      labels: minutes.map((point) => dateShort(point.week)),
                       datasets: [
                         {
-                          label: 'Minutos',
+                          label: t('stats.minutes'),
                           data: minutes.map((point) => point.value),
                           backgroundColor: 'rgba(110, 168, 255, 0.55)',
                           borderColor: BLUE,
@@ -238,7 +239,7 @@ export function StatsPage() {
                           yAxisID: 'y',
                         },
                         {
-                          label: 'Kilómetros',
+                          label: t('stats.kilometers'),
                           data: minutes.map(
                             (point) =>
                               distance.find((item) => item.week === point.week)?.value ?? 0,
@@ -280,7 +281,7 @@ export function StatsPage() {
 
           <div className="card card-pad" style={{ marginTop: 16 }}>
             <div className="row-between" style={{ marginBottom: 10 }}>
-              <h2>Progresión por ejercicio</h2>
+              <h2>{t('stats.progression')}</h2>
               {weightExercises.length > 0 ? (
                 <select
                   className="select"
@@ -298,15 +299,15 @@ export function StatsPage() {
             </div>
 
             {progress.length === 0 ? (
-              <p className="muted small">Sin series registradas de este ejercicio en el periodo.</p>
+              <p className="muted small">{t('stats.noSets')}</p>
             ) : (
               <div className="chart-box">
                 <Line
                   data={{
-                    labels: progress.map((point) => formatDateShort(point.date)),
+                    labels: progress.map((point) => dateShort(point.date)),
                     datasets: [
                       {
-                        label: '1RM estimado (kg)',
+                        label: t('stats.bestRm'),
                         data: progress.map((point) => Math.round(point.best1RM * 10) / 10),
                         borderColor: ACCENT,
                         backgroundColor: 'rgba(198, 242, 78, 0.12)',
@@ -315,7 +316,7 @@ export function StatsPage() {
                         pointRadius: 3,
                       },
                       {
-                        label: 'Peso máximo (kg)',
+                        label: t('stats.topWeight'),
                         data: progress.map((point) => point.topWeight),
                         borderColor: ORANGE,
                         backgroundColor: 'transparent',
@@ -333,29 +334,29 @@ export function StatsPage() {
 
           <div className="card" style={{ marginTop: 16 }}>
             <div className="card-pad" style={{ paddingBottom: 6 }}>
-              <h2>Totales por ejercicio</h2>
+              <h2>{t('stats.totals')}</h2>
             </div>
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Ejercicio</th>
-                    <th>Tipo</th>
-                    <th>Sesiones</th>
-                    <th>Volumen (kg)</th>
-                    <th>Mejor 1RM</th>
-                    <th>Minutos</th>
+                    <th>{t('stats.exercise')}</th>
+                    <th>{t('stats.type')}</th>
+                    <th>{t('stats.sessionsCol')}</th>
+                    <th>{t('stats.volumeCol')}</th>
+                    <th>{t('stats.bestRmCol')}</th>
+                    <th>{t('stats.minutesCol')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {totals.map((item) => (
                     <tr key={item.exerciseId}>
                       <td>{item.exerciseName}</td>
-                      <td className="dim">{item.type === 'cardio' ? 'Cardio' : 'Pesas'}</td>
+                      <td className="dim">{item.type === 'cardio' ? t('type.cardio') : t('type.weights')}</td>
                       <td>{item.sessions}</td>
-                      <td>{item.totalVolume > 0 ? formatNumber(item.totalVolume) : '—'}</td>
-                      <td>{item.best1RM > 0 ? formatNumber(item.best1RM, 1) : '—'}</td>
-                      <td>{item.totalMinutes > 0 ? formatNumber(item.totalMinutes) : '—'}</td>
+                      <td>{item.totalVolume > 0 ? number(item.totalVolume) : '—'}</td>
+                      <td>{item.best1RM > 0 ? number(item.best1RM, 1) : '—'}</td>
+                      <td>{item.totalMinutes > 0 ? number(item.totalMinutes) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { TemplateSummary } from '../../shared/types';
-import { plural } from '../lib/format';
+import { useI18n } from '../i18n';
 import { IconChevron, IconX } from './Icons';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 
 /** Modal para cargar una plantilla en la sesión abierta. */
 export function TemplatePicker({ templates, onPick, onClose }: Props) {
+  const { t, plural } = useI18n();
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -27,8 +28,8 @@ export function TemplatePicker({ templates, onPick, onClose }: Props) {
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
         <div className="modal-head">
-          <h2>Cargar plantilla</h2>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Cerrar">
+          <h2>{t('templatePicker.title')}</h2>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label={t('common.close')}>
             <IconX />
           </button>
         </div>
@@ -36,8 +37,7 @@ export function TemplatePicker({ templates, onPick, onClose }: Props) {
         <div className="modal-body">
           {templates.length === 0 ? (
             <p className="muted small" style={{ padding: 18, textAlign: 'center' }}>
-              Todavía no tienes plantillas. Crea una en la sección Plantillas o guarda la sesión de hoy
-              como plantilla.
+              {t('templatePicker.empty')}
             </p>
           ) : (
             <div style={{ maxHeight: '52vh', overflow: 'auto' }}>
@@ -50,7 +50,7 @@ export function TemplatePicker({ templates, onPick, onClose }: Props) {
                   <span>
                     <strong style={{ fontWeight: 550 }}>{template.name}</strong>
                     <span className="dim small" style={{ marginLeft: 8 }}>
-                      {plural(template.itemCount, 'ejercicio', 'ejercicios')}
+                      {plural(template.itemCount, t('common.exercise'), t('common.exercises'))}
                     </span>
                   </span>
                   <IconChevron width={15} height={15} />

@@ -1,4 +1,5 @@
 import type { FigureId } from '../../library/types';
+import { useI18n } from '../i18n';
 
 interface Pose {
   hip: [number, number];
@@ -296,6 +297,7 @@ export function ExerciseFigure({
   animated?: boolean;
   className?: string;
 }) {
+  const { t } = useI18n();
   const animation = ANIMATIONS[figure] ?? ANIMATIONS.squat;
   const fromJoints = solve(animation.from);
   const toJoints = solve(animation.to);
@@ -306,7 +308,7 @@ export function ExerciseFigure({
       className={`figure-svg ${className ?? ''}`}
       viewBox="0 0 200 210"
       role="img"
-      aria-label="Figura esquemática del movimiento"
+      aria-label={t('figure.aria')}
     >
       <Scene animation={animation} />
       <g className={animated ? 'figure-frame' : undefined}>

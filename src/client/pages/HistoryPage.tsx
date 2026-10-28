@@ -5,7 +5,8 @@ import { listSessionDetails, deleteSession } from '../../db/repositories/session
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
-import { formatDateLong, formatNumber, plural, todayISO } from '../lib/format';
+import { todayISO } from '../lib/format';
+import { useI18n } from '../i18n';
 import { IconChevron, IconEdit, IconTrash } from '../components/Icons';
 
 function daysAgo(days: number): string {
@@ -33,6 +34,7 @@ function sessionTotals(session: SessionDetail) {
 export function HistoryPage() {
   const { user } = useAuth();
   const handle = useDbHandle();
+  const { t, tError, dateLong, number, plural } = useI18n();
   const [range, setRange] = useState<'30' | '90' | 'all'>('90');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState<number | null>(null);
@@ -59,13 +61,13 @@ export function HistoryPage() {
   };
 
   const remove = async (session: SessionDetail) => {
-    if (!window.confirm(`¿Borrar la sesión del ${formatDateLong(session.date)}?`)) return;
+    if (!window.confirm(t('history.deleteConfirm', { date: dateLong(session.date) }))) return;
     setBusy(session.id);
     try {
       await deleteSession(handle, user!.id, session.id);
       sessions.reload();
     } catch (cause) {
-      window.alert(cause instanceof Error ? cause.message : String(cause));
+      window.alert(tError(cause));
     } finally {
       setBusy(null);
     }
@@ -75,20 +77,22 @@ export function HistoryPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Histórico</div>
-          <h1>Tus entrenamientos</h1>
+          <div className="eyebrow">{t('history.eyebrow')}</div>
+          <h1>{t('history.title')}</h1>
           <p>
-            {sessions.data ? plural(sessions.data.length, 'sesión', 'sesiones') : 'Cargando…'} ·
-            volumen acumulado <span className="mono">{formatNumber(totalVolume)} kg</span>
+            {sessions.data
+              ? plural(sessions.data.length, t('common.session'), t('common.sessions'))
+              : t('common.loading')}{' '}
+            · {t('history.volume')} <span className="mono">{number(totalVolume)} kg</span>
           </p>
         </div>
 
         <div className="row" style={{ gap: 6 }}>
           {(
             [
-              ['30', '30 días'],
-              ['90', '90 días'],
-              ['all', 'Todo'],
+              ['30', t('range.days30')],
+              ['90', t('range.days90')],
+              ['all', t('common.all')],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -102,18 +106,18 @@ export function HistoryPage() {
         </div>
       </div>
 
-      {sessions.error ? <div className="alert">{sessions.error}</div> : null}
+      {sessions.error ? <div className="alert">{tError(sessions.error)}</div> : null}
 
       {sessions.loading && !sessions.data ? (
-        <div className="empty">Cargando histórico…</div>
+        <div className="empty">{t('history.loading')}</div>
       ) : (sessions.data ?? []).length === 0 ? (
         <div className="empty">
-          <p style={{ fontWeight: 600, color: 'var(--text)' }}>Aún no hay sesiones guardadas</p>
+          <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('history.emptyTitle')}</p>
           <p className="small" style={{ marginTop: 4 }}>
-            Empieza registrando el entrenamiento de hoy.
+            {t('history.emptyBody')}
           </p>
           <Link className="btn btn-primary" to="/session" style={{ marginTop: 16 }}>
-            Ir a la sesión de hoy
+            {t('history.goToday')}
           </Link>
         </div>
       ) : (
@@ -125,10 +129,10 @@ export function HistoryPage() {
             return (
               <div className="session-item" key={session.id}>
                 <button className="session-summary" onClick={() => toggle(session.id)}>
-                  <span className="session-date">{session.date === todayISO() ? 'Hoy' : formatDateLong(session.date)}</span>
+                  <span className="session-date">{session.date === todayISO() ? t('common.today') : dateLong(session.date)}</span>
                   <span className="row small muted" style={{ gap: 14 }}>
-                    <span>{plural(session.logs.length, 'ejercicio', 'ejercicios')}</span>
-                    {totals.volume > 0 ? <span className="mono">{formatNumber(totals.volume)} kg</span> : null}
+                    <span>{plural(session.logs.length, t('common.exercise'), t('common.exercises'))}</span>
+                    {totals.volume > 0 ? <span className="mono">{number(totals.volume)} kg</span> : null}
                     {totals.minutes > 0 ? <span className="mono">{totals.minutes} min</span> : null}
                     {totals.distance > 0 ? <span className="mono">{totals.distance} km</span> : null}
                   </span>
@@ -154,7 +158,7 @@ export function HistoryPage() {
                         <span>
                           {log.exerciseName}{' '}
                           <span className="dim small">
-                            {log.exerciseType === 'cardio' ? 'cardio' : 'pesas'}
+                            {log.exerciseType === 'cardio' ? t('type.cardioLower') : t('type.weightsLower')}
                           </span>
                         </span>
                         <span className="mono small muted" style={{ textAlign: 'right' }}>
@@ -169,14 +173,14 @@ export function HistoryPage() {
 
                     <div className="row" style={{ marginTop: 14, gap: 8 }}>
                       <Link className="btn btn-sm" to={`/session/${session.date}`}>
-                        <IconEdit width={15} height={15} /> Editar
+                        <IconEdit width={15} height={15} /> {t('common.edit')}
                       </Link>
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => remove(session)}
                         disabled={busy === session.id}
                       >
-                        <IconTrash width={15} height={15} /> Borrar
+                        <IconTrash width={15} height={15} /> {t('common.delete')}
                       </button>
                     </div>
                   </div>

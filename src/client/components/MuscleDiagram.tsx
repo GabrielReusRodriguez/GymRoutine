@@ -1,4 +1,5 @@
 import type { Muscle } from '../../library/types';
+import { useI18n } from '../i18n';
 
 interface Props {
   primary: Muscle[];
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function MuscleDiagram({ primary, secondary, className }: Props) {
+  const { t } = useI18n();
   const primarySet = new Set(primary);
   const secondarySet = new Set(secondary);
 
@@ -17,11 +19,11 @@ export function MuscleDiagram({ primary, secondary, className }: Props) {
   };
 
   return (
-    <svg className={`muscle-svg ${className ?? ''}`} viewBox="0 0 360 240" role="img" aria-label="Músculos trabajados">
+    <svg className={`muscle-svg ${className ?? ''}`} viewBox="0 0 360 240" role="img" aria-label={t('muscleDiagram.aria')}>
       {/* ── Vista frontal ── */}
       <g>
         <text x={80} y={12} textAnchor="middle" className="figure-label">
-          Frontal
+          {t('muscleDiagram.front')}
         </text>
         <path
           className="body-outline"
@@ -64,7 +66,7 @@ export function MuscleDiagram({ primary, secondary, className }: Props) {
       {/* ── Vista trasera ── */}
       <g transform="translate(180 0)">
         <text x={80} y={12} textAnchor="middle" className="figure-label">
-          Trasera
+          {t('muscleDiagram.back')}
         </text>
         <path
           className="body-outline"
@@ -107,15 +109,16 @@ export function MuscleDiagram({ primary, secondary, className }: Props) {
 }
 
 export function MuscleLegend() {
+  const { t } = useI18n();
   return (
     <div className="row small muted" style={{ gap: 18 }}>
       <span>
         <span className="legend-dot" style={{ background: 'var(--primary-muscle)' }} />
-        Principal
+        {t('muscleDiagram.primary')}
       </span>
       <span>
         <span className="legend-dot" style={{ background: 'var(--secondary-muscle)' }} />
-        Secundario
+        {t('muscleDiagram.secondary')}
       </span>
     </div>
   );

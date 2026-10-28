@@ -9,12 +9,14 @@ import {
   muscleLabel,
   searchLibrary,
 } from '../../library';
+import { useI18n } from '../i18n';
 import { ExerciseFigure } from '../components/ExerciseFigure';
 import { LibraryDrawer } from '../components/LibraryDrawer';
 import { IconSearch } from '../components/Icons';
 
 export function LibraryPage() {
   const navigate = useNavigate();
+  const { t, locale, plural } = useI18n();
   const [query, setQuery] = useState('');
   const [pattern, setPattern] = useState<MovementPattern | ''>('');
   const [equipment, setEquipment] = useState<Equipment | ''>('');
@@ -25,13 +27,14 @@ export function LibraryPage() {
     () =>
       searchLibrary({
         query,
+        locale,
         filters: {
           pattern: pattern || undefined,
           equipment: equipment || undefined,
           muscle: muscle || undefined,
         },
       }),
-    [query, pattern, equipment, muscle],
+    [query, pattern, equipment, muscle, locale],
   );
 
   const addToSession = (exercise: LibraryExercise) => {
@@ -42,9 +45,12 @@ export function LibraryPage() {
     <>
       <div className="page-header">
         <div>
-          <div className="eyebrow">Biblioteca · {results.length} ejercicios</div>
-          <h1>Técnica y músculos</h1>
-          <p>Consulta cómo se ejecuta cada ejercicio y qué musculatura trabaja.</p>
+          <div className="eyebrow">
+            {t('library.pageEyebrow')} ·{' '}
+            {plural(results.length, t('common.exercise'), t('common.exercises'))}
+          </div>
+          <h1>{t('library.pageTitle')}</h1>
+          <p>{t('library.pageIntro')}</p>
         </div>
       </div>
 
@@ -57,7 +63,7 @@ export function LibraryPage() {
             <input
               className="input"
               style={{ paddingLeft: 36 }}
-              placeholder="Buscar por nombre, alias o músculo (p. ej. “banca”, “glúteo”)…"
+              placeholder={t('library.searchPlaceholder')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -70,8 +76,8 @@ export function LibraryPage() {
               value={pattern}
               onChange={(event) => setPattern(event.target.value as MovementPattern | '')}
             >
-              <option value="">Todo patrón</option>
-              {Object.entries(PATTERN_LABELS).map(([value, label]) => (
+              <option value="">{t('library.allPatterns')}</option>
+              {Object.entries(PATTERN_LABELS[locale]).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -84,8 +90,8 @@ export function LibraryPage() {
               value={equipment}
               onChange={(event) => setEquipment(event.target.value as Equipment | '')}
             >
-              <option value="">Todo material</option>
-              {Object.entries(EQUIPMENT_LABELS).map(([value, label]) => (
+              <option value="">{t('library.allEquipment')}</option>
+              {Object.entries(EQUIPMENT_LABELS[locale]).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -98,10 +104,10 @@ export function LibraryPage() {
               value={muscle}
               onChange={(event) => setMuscle(event.target.value as Muscle | '')}
             >
-              <option value="">Todo músculo</option>
+              <option value="">{t('library.allMuscles')}</option>
               {MUSCLES.map((value) => (
                 <option key={value} value={value}>
-                  {MUSCLE_LABELS[value]}
+                  {MUSCLE_LABELS[locale][value]}
                 </option>
               ))}
             </select>
@@ -116,7 +122,7 @@ export function LibraryPage() {
                   setMuscle('');
                 }}
               >
-                Limpiar
+                {t('library.clear')}
               </button>
             ) : null}
           </div>
@@ -125,9 +131,9 @@ export function LibraryPage() {
 
       {results.length === 0 ? (
         <div className="empty">
-          <p style={{ fontWeight: 600, color: 'var(--text)' }}>Sin resultados</p>
+          <p style={{ fontWeight: 600, color: 'var(--text)' }}>{t('library.emptyTitle')}</p>
           <p className="small" style={{ marginTop: 4 }}>
-            Prueba con otro nombre, músculo o material.
+            {t('library.emptyBody')}
           </p>
         </div>
       ) : (
@@ -140,13 +146,13 @@ export function LibraryPage() {
               <div>
                 <div style={{ fontWeight: 600 }}>{exercise.name}</div>
                 <div className="small dim" style={{ marginTop: 2 }}>
-                  {PATTERN_LABELS[exercise.pattern]} · {EQUIPMENT_LABELS[exercise.equipment]}
+                  {PATTERN_LABELS[locale][exercise.pattern]} · {EQUIPMENT_LABELS[locale][exercise.equipment]}
                 </div>
               </div>
               <div className="row" style={{ gap: 4 }}>
                 {exercise.primaryMuscles.slice(0, 2).map((item) => (
                   <span key={item} className="badge badge-accent">
-                    {muscleLabel(item)}
+                    {muscleLabel(item, locale)}
                   </span>
                 ))}
               </div>

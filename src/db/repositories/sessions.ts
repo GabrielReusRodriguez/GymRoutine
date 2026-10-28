@@ -10,45 +10,47 @@ import type {
   SessionSummary,
 } from '../../shared/types';
 import { exerciseTypesById } from './exercises';
+import { ERROR_KEYS } from '../../shared/errors';
 import { NotFoundError, ValidationError } from './errors';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function assertDate(date: string): void {
-  if (!DATE_RE.test(date)) throw new ValidationError('Fecha inválida (usa yyyy-mm-dd).');
+  if (!DATE_RE.test(date)) throw new ValidationError(ERROR_KEYS.sessions.invalidDate);
 }
 
 function validateLogs(logs: SessionLogInput[], exerciseMap: Map<number, Exercise>): void {
   for (const log of logs) {
     const exercise = exerciseMap.get(log.exerciseId);
-    if (!exercise) throw new ValidationError('Hay un ejercicio que no existe o no es tuyo.');
+    if (!exercise) throw new ValidationError(ERROR_KEYS.sessions.exerciseUnavailable);
+    const vars = { name: exercise.name };
 
     if (exercise.type === 'cardio') {
       if (log.durationMin === null || !(log.durationMin > 0)) {
-        throw new ValidationError(`"${exercise.name}": indica los minutos de cardio.`);
+        throw new ValidationError(ERROR_KEYS.sessions.cardioNeedsDuration, vars);
       }
       if (log.sets.length > 0) {
-        throw new ValidationError(`"${exercise.name}": el cardio no admite series.`);
+        throw new ValidationError(ERROR_KEYS.sessions.cardioNoSets, vars);
       }
       if (log.distanceKm !== null && log.distanceKm < 0) {
-        throw new ValidationError(`"${exercise.name}": la distancia no puede ser negativa.`);
+        throw new ValidationError(ERROR_KEYS.sessions.negativeDistance, vars);
       }
     } else {
       if (log.durationMin !== null || log.distanceKm !== null) {
-        throw new ValidationError(`"${exercise.name}": un ejercicio de pesas no lleva duración.`);
+        throw new ValidationError(ERROR_KEYS.sessions.weightsNoDuration, vars);
       }
       if (log.sets.length === 0) {
-        throw new ValidationError(`"${exercise.name}": añade al menos una serie.`);
+        throw new ValidationError(ERROR_KEYS.sessions.weightsNeedSet, vars);
       }
       for (const set of log.sets) {
         if (set.weightKg === null && set.reps === null) {
-          throw new ValidationError(`"${exercise.name}": cada serie necesita peso o repeticiones.`);
+          throw new ValidationError(ERROR_KEYS.sessions.setNeedsData, vars);
         }
         if (set.weightKg !== null && (set.weightKg < 0 || !Number.isFinite(set.weightKg))) {
-          throw new ValidationError(`"${exercise.name}": peso inválido.`);
+          throw new ValidationError(ERROR_KEYS.sessions.invalidWeight, vars);
         }
         if (set.reps !== null && (!Number.isInteger(set.reps) || set.reps <= 0)) {
-          throw new ValidationError(`"${exercise.name}": las repeticiones deben ser un entero positivo.`);
+          throw new ValidationError(ERROR_KEYS.sessions.invalidReps, vars);
         }
       }
     }
@@ -94,7 +96,7 @@ export async function validateSessionInput(
   for (const id of uniqueIds) {
     const exercise = exerciseMap.get(id);
     if (!exercise || (exercise.userId !== null && exercise.userId !== userId)) {
-      throw new ValidationError('Hay un ejercicio que no existe o no es tuyo.');
+      throw new ValidationError(ERROR_KEYS.sessions.exerciseUnavailable);
     }
   }
 
@@ -138,7 +140,7 @@ export async function writeSession(
       })
       .returning({ id: sessions.id });
     const row = inserted[0];
-    if (!row) throw new Error('No se pudo crear la sesión.');
+    if (!row) throw new Error(ERROR_KEYS.db.createSession);
     sessionId = row.id;
   }
 
@@ -155,7 +157,7 @@ export async function writeSession(
       .returning({ id: exerciseLogs.id });
 
     const logRow = insertedLog[0];
-    if (!logRow) throw new Error('No se pudo guardar el ejercicio.');
+    if (!logRow) throw new Error(ERROR_KEYS.db.saveLog);
 
     if (log.sets.length > 0) {
       await h.db.insert(series).values(
@@ -324,7 +326,7 @@ export async function deleteSession(
     .select({ id: sessions.id })
     .from(sessions)
     .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)));
-  if (rows.length === 0) throw new NotFoundError('Sesión no encontrada.');
+  if (rows.length === 0) throw new NotFoundError(ERROR_KEYS.sessions.notFound);
 
   await withTransaction(h.exec, async () => {
     await clearSessionLogs(h, sessionId);
