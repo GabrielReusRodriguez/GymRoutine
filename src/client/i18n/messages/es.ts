@@ -78,6 +78,10 @@ export const es = {
     passwordMismatch: 'Las contraseñas nuevas no coinciden.',
     passwordUpdated: 'Contraseña actualizada.',
     updatePassword: 'Actualizar contraseña',
+    feedbackTitle: 'Sugerencias e incidencias',
+    feedbackHelp:
+      '¿Has encontrado un problema o quieres proponer una mejora? Cuéntalo en el repositorio de GitHub.',
+    feedbackLink: 'Abrir una sugerencia o incidencia',
     dangerTitle: 'Zona peligrosa',
     dangerHelp:
       'Borrar el perfil elimina todos sus datos de este navegador. No se puede deshacer.',
