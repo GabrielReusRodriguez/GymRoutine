@@ -76,6 +76,10 @@ export const ca: Dictionary = {
     passwordMismatch: 'Les contrasenyes noves no coincideixen.',
     passwordUpdated: 'Contrasenya actualitzada.',
     updatePassword: 'Actualitza la contrasenya',
+    feedbackTitle: 'Suggeriments i incidències',
+    feedbackHelp:
+      'Has trobat un problema o vols proposar una millora? Explica-ho al repositori de GitHub.',
+    feedbackLink: 'Obre un suggeriment o una incidència',
     dangerTitle: 'Zona perillosa',
     dangerHelp:
       "Esborrar el perfil elimina totes les seves dades d'aquest navegador. No es pot desfer.",

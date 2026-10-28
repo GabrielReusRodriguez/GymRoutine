@@ -5,7 +5,7 @@ import { changePassword, deleteUser } from '../../db/repositories/users';
 import { useAuth } from '../hooks/useAuth';
 import { useDbHandle } from '../hooks/useDb';
 import { useI18n } from '../i18n';
-import { IconDownload, IconUpload } from '../components/Icons';
+import { IconDownload, IconExternalLink, IconUpload } from '../components/Icons';
 import { LanguageSwitch } from '../components/LanguageSwitch';
 
 export function SettingsPage() {
@@ -225,6 +225,21 @@ export function SettingsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      <div className="card card-pad" style={{ marginTop: 16 }}>
+        <h2>{t('settings.feedbackTitle')}</h2>
+        <p className="muted small" style={{ marginTop: 4, marginBottom: 14 }}>
+          {t('settings.feedbackHelp')}
+        </p>
+        <a
+          className="btn"
+          href="https://github.com/GabrielReusRodriguez/GymTracker/issues"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <IconExternalLink /> {t('settings.feedbackLink')}
+        </a>
       </div>
 
       <div className="card card-pad" style={{ marginTop: 16, borderColor: 'rgba(255,107,107,0.25)' }}>
