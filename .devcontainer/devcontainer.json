@@ -1,0 +1,24 @@
+{
+  "name": "Gym Tracker",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/github-cli:1": {}
+  },
+  "forwardPorts": [5173, 8787],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite dev server",
+      "onAutoForward": "notify"
+    },
+    "8787": {
+      "label": "Wrangler dev",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": ["Vitest.vitest", "esbenp.prettier-vscode", "mhutchie.git-graph"]
+    }
+  }
+}
