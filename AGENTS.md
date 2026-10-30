@@ -103,6 +103,59 @@ Antes de dar por terminado un cambio de UI, revísalo en 320, 360, 390, 768, 102
 9. **Idioma**: `es.ts` es la referencia de claves y `ca.ts` se tipa contra él, así que ambos diccionarios deben tener exactamente las mismas claves (paridad verificada por TypeScript y por test). Un error de dominio nuevo exige clave en `ERROR_KEYS`, entrada en los dos diccionarios y tests que comparen con la clave. La preferencia de idioma vive en `localStorage` (global + por perfil), nunca en la BD; los datos del usuario (nombres, notas, seed del catálogo) no se traducen.
 10. **Responsive**: ninguna pantalla puede provocar scroll horizontal desde 320 px, ni dejar contenido o acciones inalcanzables en móvil, tablet o escritorio. La navegación, los formularios, las tablas y las gráficas se adaptan según SPEC §12. Un layout que solo funciona en escritorio es un bug.
 
+## Definition of Done (DoD)
+
+Un cambio (feature, fix, refactor o doc) **no se considera listo** hasta que cumpla **todos** los siguientes criterios. **NUNCA se hará commit, push, PR o merge sin confirmación explícita del usuario**, incluso si el cambio cumple todos los puntos de esta lista.
+
+---
+
+### ✅ Criterios técnicos
+1. **Tests pasan**:
+   - Ejecuta `npm run test` y `npm run typecheck` **sin errores**.
+   - Si el cambio afecta a:
+     - **Repositorios**: tests contra SQLite in-memory que cubran los nuevos casos (incluyendo `ERROR_KEYS` si aplica).
+     - **Lógica compartida** (`shared/stats.ts`, `library/index.ts`, `i18n`): cobertura obligatoria con Vitest.
+     - **Invariantes** (sección anterior): al menos un test que proteja cada invariante afectado.
+   - *Excepción*: Cambios de UI pura (CSS/estilos) no requieren tests automáticos, pero sí verificación manual (véase punto 4).
+
+2. **SPEC.md actualizado**:
+   - Si el cambio **modifica el comportamiento funcional** (ej.: nueva pantalla, campo en el modelo de datos, regla de negocio), actualiza `SPEC.md` **antes de implementar**.
+   - Si el cambio **aclara o corrige** la spec (ej.: error en un invariante), actualiza `SPEC.md` y referéncialo en el commit.
+   - *Regla*: Si `AGENTS.md` y `SPEC.md` discrepan, **la spec es la fuente de verdad**. Corrige el desacuerdo o pregunta antes de proceder.
+
+3. **Código consistente**:
+   - Sigue las **convenciones de código** (TypeScript strict, sin `any`, nombres en inglés, etc.).
+   - No introduce dependencias nuevas sin justificación en el commit/PR.
+
+---
+### ✅ Criterios de calidad
+4. **Verificación manual**:
+   - **Responsive**: Revisa el cambio en **320, 360, 390, 768, 1024 y 1440 px** (vertical y horizontal), con los dos idiomas (`es`/`ca`).
+     - *Checklist*: Sin scroll horizontal, contenido legible, acciones alcanzables, gráficas/tablas adaptadas.
+   - **Flujo de usuario**: Prueba el cambio en el contexto real (ej.: si modificas la pantalla de sesión, registra una sesión completa en móvil).
+   - **Idioma**: Verifica que todos los textos nuevos usan `useI18n()` y que las claves existen en `es.ts` y `ca.ts` (TypeScript debe compilar sin errores de paridad).
+
+5. **Documentación actualizada**:
+   - **Código**: Comentarios solo para explicar el *porqué* (no el *qué*). Si el cambio es complejo, añade un comentario breve en el código.
+   - **Docs**:
+     - Si el cambio afecta a **arquitectura, estructura o comandos**, actualiza `AGENTS.md`.
+     - Si el cambio afecta a **requisitos, pantallas o lógica de negocio**, actualiza `SPEC.md`.
+     - Si el cambio es un **nuevo endpoint o comportamiento del worker**, documéntalo en `SPEC.md §9`.
+   - *Regla*: La documentación se actualiza **en el mismo commit** que el cambio (no después).
+
+6. **Revisión por pares (opcional pero recomendado)**:
+   - Si el cambio es complejo o afecta a invariantes críticos (ej.: aislamiento por usuario, tipos de log), pide revisión antes de considerar el cambio listo.
+
+---
+### ⚠️ Condiciones pendientes
+El cambio **no está listo** si:
+- Fallan `test` o `typecheck`.
+- `SPEC.md` está desactualizado y el cambio es funcional.
+- Hay scroll horizontal o contenido inalcanzable en algún ancho de la lista (320–1440 px).
+- Textos literales en componentes (no usan `useI18n()`).
+- Faltan claves de error en `ERROR_KEYS` o diccionarios (`es.ts`/`ca.ts`).
+- La documentación (AGENTS.md o SPEC.md) no refleja el cambio.
+
 ## Convenciones de código
 
 - TypeScript strict, sin `any` salvo justificación en comentario.
