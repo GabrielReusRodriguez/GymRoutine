@@ -1,6 +1,6 @@
 # Gym Tracker — Especificación técnica
 
-**Versión:** 2.3 · **Fecha:** 2026-10-28 · **Estado:** implementada (fases 1–9); la fase 9 (idioma) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge; la fase 10 (diseño responsive) está planificada
+**Versión:** 2.4 · **Fecha:** 2026-10-30 · **Estado:** implementada (fases 1–9 en `main`); entrada al idioma por URL (`?lang=es|ca`) en la rama `feat/url-lang-param`, pendiente de PR; la fase 10 (diseño responsive) está planificada
 
 Aplicación web para registrar entrenamientos de gimnasio: por cada día de entrenamiento se guarda la duración de cada ejercicio de cardio y el peso y las repeticiones (por series) de cada ejercicio de pesas. Desplegada en Cloudflare, con persistencia local en el navegador mediante SQLite WASM + OPFS y multiusuario mediante cuentas locales con contraseña.
 
@@ -18,7 +18,7 @@ Aplicación web para registrar entrenamientos de gimnasio: por cada día de entr
 | ORM | Drizzle ORM (driver sqlite-wasm) | Tipado + migraciones |
 | Contenido de ejercicios | Catálogo embebido (~60–80 ejercicios de fuerza) | Offline, sin API keys, mantenible |
 | Media del catálogo | SVG (figura del movimiento + diagrama muscular) | Ligero, offline, estilo consistente |
-| Idioma de la interfaz | Castellano (por defecto) y catalán, conmutables | Preferencia por perfil en `localStorage`, sin dependencias |
+| Idioma de la interfaz | Castellano (por defecto) y catalán, conmutables; entrada forzada con `?lang=es\|ca` | Preferencia por perfil en `localStorage` + parámetro de URL, sin dependencias |
 | Diseño de interfaz | Responsive mobile-first, de 320 px a escritorio | Se usa en el móvil durante el entrenamiento y en escritorio para análisis |
 
 ### Consecuencias aceptadas
@@ -279,12 +279,13 @@ export default { fetch: app.fetch };
 
 ## 11. Idioma de la interfaz
 
-La UI está disponible en **castellano** (por defecto) y **catalán**. No hay idioma por URL ni recarga: el cambio es inmediato.
+La UI está disponible en **castellano** (por defecto) y **catalán**. El cambio es inmediato, sin recarga.
 
+- **Parámetro de URL**: cualquier ruta acepta `?lang=es` o `?lang=ca` (sin importar la capitalización, p. ej. `/?lang=CA`). Si el valor es válido gana sobre cualquier otra fuente, se aplica también en la pantalla de login, se persiste como preferencia (global y del perfil si hay sesión) y se retira de la barra de direcciones con `history.replaceState`. Si falta o no es un idioma soportado (`?lang=fr`) se ignora. Sirve para compartir un enlace en un idioma concreto.
 - **Preferencia**: `localStorage` (no hay columna en la BD porque es una preferencia de dispositivo, no un dato de entrenamiento).
-  - `gym-tracker.locale`: último idioma elegido (incluye la pantalla de login).
+  - `gym-tracker.locale`: último idioma elegido (incluye la pantalla de login y el último `?lang=` aplicado).
   - `gym-tracker.locales`: mapa `{ [userId]: Locale }` para recordar el idioma de cada perfil.
-- **Resolución** al cargar y al entrar/salir de un perfil: idioma del perfil → idioma global → primer idioma del navegador que sea `ca` → castellano.
+- **Resolución** al cargar y al entrar/salir de un perfil: parámetro `?lang=` de la URL → idioma del perfil → idioma global → primer idioma del navegador que sea `ca` → castellano.
 - **Diccionarios**: `src/client/i18n/messages/es.ts` (referencia de claves) y `ca.ts`, tipado como la misma forma con valores `string`. TypeScript exige paridad exacta: una clave de menos o de más no compila. `t('grupo.clave', vars)` interpola `{placeholders}`.
 - **Errores de dominio**: los repositorios y el validador de backups lanzan `DomainError` con una clave de `ERROR_KEYS` (`src/shared/errors.ts`) y variables opcionales. La UI los pinta con `tError()`; nunca se muestra la clave en bruto. Los tests comparan con `ERROR_KEYS`.
 - **Fechas y números**: `Intl` con `es-ES` / `ca-ES` mediante `dateLong`, `dateShort`, `number` y `weight` de `useI18n()`.
@@ -384,7 +385,7 @@ gym/
 6. **Estadísticas**: cálculos + Chart.js.
 7. **Pulido**: export/import JSON, estados vacíos, manejo de errores, revisión UI.
 8. **Plantillas de sesión**: tablas `templates`/`template_items`, repositorio con prellenado desde el último registro, pantalla de gestión y carga en la sesión.
-9. **Idioma de la interfaz**: castellano y catalán, preferencia por perfil en `localStorage`, diccionarios tipados, errores de dominio traducibles y biblioteca bilingüe.
+9. **Idioma de la interfaz**: castellano y catalán, preferencia por perfil en `localStorage`, entrada forzada con el parámetro de URL `?lang=es|ca`, diccionarios tipados, errores de dominio traducibles y biblioteca bilingüe.
 10. **Diseño responsive**: adaptar todas las pantallas al rango 320 px–escritorio según la sección 12, con navegación inferior en móvil, formularios táctiles, tablas y gráficas adaptables y revisión en los anchos de la sección 12.2.
 
 Cada fase debe dejar la app desplegable y usable; la 2 y la 3 son prerrequisito de todo lo demás.

@@ -32,3 +32,15 @@ export function detectLocale(languages: readonly string[] = []): Locale {
   }
   return DEFAULT_LOCALE;
 }
+
+/**
+ * Idioma pedido por parámetro de URL (`?lang=es` / `?lang=ca`), sin importar la
+ * capitalización. Acepta la query con o sin `?` inicial. Devuelve null si falta
+ * o no es un idioma soportado.
+ */
+export function localeFromSearch(search: string): Locale | null {
+  const value = new URLSearchParams(search).get('lang');
+  if (!value) return null;
+  const base = value.toLowerCase();
+  return isLocale(base) ? base : null;
+}

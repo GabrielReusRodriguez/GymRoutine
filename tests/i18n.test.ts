@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { allErrorKeys } from '../src/shared/errors';
-import { DEFAULT_LOCALE, detectLocale, isLocale } from '../src/shared/locale';
+import { DEFAULT_LOCALE, detectLocale, isLocale, localeFromSearch } from '../src/shared/locale';
 import { ca } from '../src/client/i18n/messages/ca';
 import { es } from '../src/client/i18n/messages/es';
 import { resolveLocale, writeLocale } from '../src/client/i18n/storage';
@@ -50,6 +50,26 @@ describe('idiomas de la interfaz', () => {
     expect(resolveLocale(1, ['ca-ES'])).toBe('es');
     // El último idioma elegido queda también como preferencia global.
     expect(resolveLocale(2, ['ca-ES'])).toBe('es');
+  });
+
+  it('lee el idioma del parámetro lang de la URL', () => {
+    expect(localeFromSearch('?lang=es')).toBe('es');
+    expect(localeFromSearch('?lang=ca')).toBe('ca');
+    expect(localeFromSearch('lang=ca')).toBe('ca');
+    expect(localeFromSearch('?lang=CA')).toBe('ca');
+    expect(localeFromSearch('?foo=1&lang=ca&bar=2')).toBe('ca');
+    expect(localeFromSearch('?lang=fr')).toBeNull();
+    expect(localeFromSearch('?lang=')).toBeNull();
+    expect(localeFromSearch('?other=ca')).toBeNull();
+    expect(localeFromSearch('')).toBeNull();
+  });
+
+  it('prioriza el parámetro lang de la URL sobre perfil, global y navegador', () => {
+    writeLocale('ca', 1);
+    expect(resolveLocale(1, ['es-ES'], 'es')).toBe('es');
+    expect(resolveLocale(null, ['ca-ES'], localeFromSearch('?lang=es'))).toBe('es');
+    // Sin parámetro válido en la URL se comporta como antes.
+    expect(resolveLocale(1, ['es-ES'], localeFromSearch('?lang=fr'))).toBe('ca');
   });
 
   it('mantiene la paridad de claves entre castellano y catalán', () => {

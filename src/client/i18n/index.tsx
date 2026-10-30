@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { isDomainError } from '../../shared/errors';
-import type { Locale } from '../../shared/locale';
+import { localeFromSearch, type Locale } from '../../shared/locale';
 import { useAuth } from '../hooks/useAuth';
 import {
   formatDateLong,
@@ -64,11 +64,30 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  const [locale, setLocaleState] = useState<Locale>(() => resolveLocale(null));
+  const [locale, setLocaleState] = useState<Locale>(() =>
+    resolveLocale(null, undefined, localeFromSearch(window.location.search)),
+  );
 
   // Al entrar o salir de un perfil se aplica su idioma guardado.
   useEffect(() => {
     setLocaleState(resolveLocale(userId));
+  }, [userId]);
+
+  // Un `?lang=es|ca` válido en la URL gana sobre cualquier preferencia guardada,
+  // se persiste como idioma del perfil y se retira de la barra de direcciones.
+  useEffect(() => {
+    const applyUrlLocale = () => {
+      const fromUrl = localeFromSearch(window.location.search);
+      if (!fromUrl) return;
+      setLocaleState(fromUrl);
+      writeLocale(fromUrl, userId);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('lang');
+      window.history.replaceState(null, '', url.toString());
+    };
+    applyUrlLocale();
+    window.addEventListener('popstate', applyUrlLocale);
+    return () => window.removeEventListener('popstate', applyUrlLocale);
   }, [userId]);
 
   useEffect(() => {
