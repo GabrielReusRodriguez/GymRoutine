@@ -1,6 +1,6 @@
 # Gym Tracker — Especificación técnica
 
-**Versión:** 2.4 · **Fecha:** 2026-10-30 · **Estado:** implementada (fases 1–9 en `main`); entrada al idioma por URL (`?lang=es|ca`) en la rama `feat/url-lang-param`, pendiente de PR; la fase 10 (diseño responsive) está planificada
+**Versión:** 2.5 · **Fecha:** 2026-10-30 · **Estado:** implementada (fases 1–10 en `main`); reordenar ejercicios arrastrando (fase 11) validada en la rama `feat/reordenar-ejercicios-arrastrando`, pendiente de merge
 
 Aplicación web para registrar entrenamientos de gimnasio: por cada día de entrenamiento se guarda la duración de cada ejercicio de cardio y el peso y las repeticiones (por series) de cada ejercicio de pesas. Desplegada en Cloudflare, con persistencia local en el navegador mediante SQLite WASM + OPFS y multiusuario mediante cuentas locales con contraseña.
 
@@ -212,8 +212,9 @@ El enum `Muscle` es el mismo vocabulario del campo `muscle_group` de `exercises`
    - Cardio: minutos + distancia opcional.
    - Pesas: filas de series (peso × reps) con botones añadir/quitar serie.
    - Icono ℹ️ por ejercicio → ficha de la biblioteca en drawer.
+   - **Reordenar ejercicios**: arrastrando la tarjeta desde el asa (pointer events, ratón y táctil) o con los botones ↑/↓. El orden se guarda en `exercise_logs.order` al guardar la sesión.
    - **Cargar plantilla** (modal con las plantillas del usuario) y **guardar como plantilla** (captura los ejercicios y series actuales).
-3. **Plantillas** — CRUD de plantillas de sesión: crear desde cero, editar, duplicar, reordenar items y borrar. Cada item guarda el número de series (pesas) o la duración/distancia (cardio) como preset. «Aplicar a hoy» navega a `/session?template=<id>`.
+3. **Plantillas** — CRUD de plantillas de sesión: crear desde cero, editar, duplicar, reordenar items y borrar. Los items se reordenan arrastrando la tarjeta desde el asa o con los botones ↑/↓; el orden se persiste en `template_items.order`. Cada item guarda el número de series (pesas) o la duración/distancia (cardio) como preset. «Aplicar a hoy» navega a `/session?template=<id>`.
 4. **Histórico** — lista por fecha descendente, expandible, editar/borrar.
 5. **Catálogo** — CRUD de ejercicios propios; los globales no se borran (soft-hide).
 6. **Biblioteca** — buscador + detalle (sección 6).
@@ -311,7 +312,7 @@ La aplicación debe ser **responsive**: una sola base de código y la misma func
 - **Contenido gráfico**: SVG con `viewBox` y `width: 100%`; ninguna imagen o figura con ancho fijo que desborde.
 - **Tipografía y espaciado**: escalado fluido (`clamp()`) para títulos, sin anchos fijos en `px` para contenedores principales y `min-width: 0` en elementos de grid/flex para permitir el encogido.
 - **Altura móvil**: uso de `100dvh` (con fallback) para que las barras del navegador móvil no recorten la interfaz.
-- **Accesibilidad táctil y teclado**: ninguna acción depende solo de `hover`; foco visible; todo se puede completar con teclado y con lector de pantalla tanto en móvil como en escritorio.
+- **Accesibilidad táctil y teclado**: ninguna acción depende solo de `hover`; foco visible; todo se puede completar con teclado y con lector de pantalla tanto en móvil como en escritorio. Reordenar ejercicios (sesión y plantillas) tiene doble vía: arrastrar la tarjeta desde el asa de arrastre (pointer events, válido con ratón y con el dedo) o usar los botones ↑/↓, que cubren el teclado.
 - **Sin dependencias nuevas**: el responsive se resuelve con CSS y los componentes existentes; no se introduce un framework de UI solo para esto.
 
 ### 12.2 Verificación
@@ -344,8 +345,8 @@ gym/
 ├── src/
 │   ├── client/            # React
 │   │   ├── pages/         # una carpeta por pantalla (sección 7)
-│   │   ├── components/    # ExerciseFigure.tsx, MuscleDiagram.tsx, SeriesEditor.tsx, ...
-│   │   ├── hooks/         # useDb(), useSession(), queries
+│   │   ├── components/    # ExerciseFigure.tsx, MuscleDiagram.tsx, SeriesEditor.tsx, DragHandle.tsx, ...
+│   │   ├── hooks/         # useDb(), useSession(), useDragReorder(), queries
 │   │   ├── i18n/          # provider, persistencia del idioma y diccionarios es/ca
 │   │   └── lib/           # formato de fechas/números y utilidades de UI
 │   ├── db/
@@ -362,6 +363,7 @@ gym/
 │   │   └── index.ts       # Hono
 │   └── shared/
 │       ├── types.ts
+│       ├── list.ts        # utilidades de listas (reorderItem)
 │       ├── stats.ts       # 1RM Epley, volumen, agregaciones
 │       ├── locale.ts      # Locale, etiquetas y detección desde el navegador
 │       ├── errors.ts      # DomainError y claves de error traducibles
@@ -387,5 +389,6 @@ gym/
 8. **Plantillas de sesión**: tablas `templates`/`template_items`, repositorio con prellenado desde el último registro, pantalla de gestión y carga en la sesión.
 9. **Idioma de la interfaz**: castellano y catalán, preferencia por perfil en `localStorage`, entrada forzada con el parámetro de URL `?lang=es|ca`, diccionarios tipados, errores de dominio traducibles y biblioteca bilingüe.
 10. **Diseño responsive**: adaptar todas las pantallas al rango 320 px–escritorio según la sección 12, con navegación inferior en móvil, formularios táctiles, tablas y gráficas adaptables y revisión en los anchos de la sección 12.2.
+11. **Reordenar ejercicios arrastrando**: asa de arrastre con pointer events en las tarjetas de la sesión y del editor de plantillas, con botones ↑/↓ como alternativa de teclado; el orden se persiste en `exercise_logs.order` y `template_items.order` sin cambios de esquema.
 
 Cada fase debe dejar la app desplegable y usable; la 2 y la 3 son prerrequisito de todo lo demás.

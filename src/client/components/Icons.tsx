@@ -137,6 +137,12 @@ export const IconExternalLink = (p: IconProps) => (
   </Base>
 );
 
+export const IconGrip = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" strokeWidth={2.6} />
+  </Base>
+);
+
 export const IconChevron = (p: IconProps) => (
   <Base {...p}>
     <path d="M9 6l6 6-6 6" />

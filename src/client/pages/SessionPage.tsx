@@ -15,8 +15,11 @@ import { ExercisePicker } from '../components/ExercisePicker';
 import { TemplatePicker } from '../components/TemplatePicker';
 import { LibraryDrawer } from '../components/LibraryDrawer';
 import { SeriesEditor } from '../components/SeriesEditor';
+import { DragHandle } from '../components/DragHandle';
+import { useDragReorder } from '../hooks/useDragReorder';
 import { IconInfo, IconPlus, IconTemplate, IconTrash, IconX } from '../components/Icons';
 import { isValidISODate, parseNullableNumber, todayISO } from '../lib/format';
+import { reorderItem } from '../../shared/list';
 
 interface Draft {
   key: string;
@@ -220,6 +223,20 @@ export function SessionPage() {
     setSuccess(null);
   };
 
+  const moveDraft = (key: string, delta: number) => {
+    setDrafts((previous) => {
+      const index = previous.findIndex((draft) => draft.key === key);
+      if (index < 0) return previous;
+      return reorderItem(previous, index, index + delta);
+    });
+    setSuccess(null);
+  };
+
+  const dragReorder = useDragReorder(drafts.length, (from, to) => {
+    setDrafts((previous) => reorderItem(previous, from, to));
+    setSuccess(null);
+  });
+
   const save = async () => {
     setSaving(true);
     setError(null);
@@ -299,14 +316,33 @@ export function SessionPage() {
           </div>
         ) : null}
 
-        {drafts.map((draft) => (
-          <div className="log-card" key={draft.key}>
+        {drafts.map((draft, index) => (
+          <div {...dragReorder.itemProps(index)} key={draft.key} ref={dragReorder.itemRef(index)}>
             <div className="log-head">
+              <DragHandle label={t('common.dragToReorderAria')} dragProps={dragReorder.handleProps(index)} />
               <div>
                 <div className="log-title">{draft.name}</div>
                 <div className="small dim">{draft.type === 'cardio' ? t('type.cardio') : t('type.weights')}</div>
               </div>
               <div className="row" style={{ marginLeft: 'auto', gap: 4 }}>
+                <button
+                  className="btn btn-ghost btn-icon"
+                  onClick={() => moveDraft(draft.key, -1)}
+                  disabled={index === 0}
+                  aria-label={t('session.moveUp')}
+                  title={t('session.moveUp')}
+                >
+                  <span aria-hidden>↑</span>
+                </button>
+                <button
+                  className="btn btn-ghost btn-icon"
+                  onClick={() => moveDraft(draft.key, 1)}
+                  disabled={index === drafts.length - 1}
+                  aria-label={t('session.moveDown')}
+                  title={t('session.moveDown')}
+                >
+                  <span aria-hidden>↓</span>
+                </button>
                 {draft.libraryId ? (
                   <button
                     className="btn btn-ghost btn-icon"

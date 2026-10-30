@@ -16,8 +16,11 @@ import { useDbHandle } from '../hooks/useDb';
 import { useAsync } from '../hooks/useAsync';
 import { useI18n } from '../i18n';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { DragHandle } from '../components/DragHandle';
+import { useDragReorder } from '../hooks/useDragReorder';
 import { IconEdit, IconPlus, IconTrash } from '../components/Icons';
 import { parseNullableNumber } from '../lib/format';
+import { reorderItem } from '../../shared/list';
 
 interface ItemDraft {
   key: string;
@@ -139,15 +142,16 @@ export function TemplatesPage() {
     setEditor((previous) => {
       if (!previous) return previous;
       const index = previous.items.findIndex((item) => item.key === key);
-      const target = index + delta;
-      if (index < 0 || target < 0 || target >= previous.items.length) return previous;
-      const items = [...previous.items];
-      const [moved] = items.splice(index, 1);
-      if (!moved) return previous;
-      items.splice(target, 0, moved);
-      return { ...previous, items };
+      const items = reorderItem(previous.items, index, index + delta);
+      return items === previous.items ? previous : { ...previous, items };
     });
   };
+
+  const dragReorder = useDragReorder(editor?.items.length ?? 0, (from, to) => {
+    setEditor((previous) =>
+      previous ? { ...previous, items: reorderItem(previous.items, from, to) } : previous,
+    );
+  });
 
   const save = async () => {
     if (!editor) return;
@@ -267,8 +271,9 @@ export function TemplatesPage() {
           ) : null}
 
           {editor.items.map((item, index) => (
-            <div className="log-card" key={item.key}>
+            <div {...dragReorder.itemProps(index)} key={item.key} ref={dragReorder.itemRef(index)}>
               <div className="log-head">
+                <DragHandle label={t('common.dragToReorderAria')} dragProps={dragReorder.handleProps(index)} />
                 <div>
                   <div className="log-title">{item.name}</div>
                   <div className="small dim">
