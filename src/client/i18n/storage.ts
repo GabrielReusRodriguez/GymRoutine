@@ -41,8 +41,17 @@ export function readUserLocale(userId: number): Locale | null {
   return isLocale(value) ? value : null;
 }
 
-/** Idioma preferido para un perfil: el suyo, si no el global, si no el del navegador. */
-export function resolveLocale(userId: number | null, languages?: readonly string[]): Locale {
+/**
+ * Idioma preferido para un perfil: el parámetro `?lang=` de la URL si está y es
+ * válido, si no el del perfil, si no el global, si no el del navegador.
+ */
+export function resolveLocale(
+  userId: number | null,
+  languages?: readonly string[],
+  urlLocale: Locale | null = null,
+): Locale {
+  if (urlLocale) return urlLocale;
+
   const fromUser = userId === null ? null : readUserLocale(userId);
   if (fromUser) return fromUser;
 
