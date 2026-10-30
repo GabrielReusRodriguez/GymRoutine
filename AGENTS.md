@@ -128,4 +128,4 @@ Antes de dar por terminado un cambio de UI, revísalo en 320, 360, 390, 768, 102
 
 ## Fases de implementación
 
-Ver `SPEC.md` §15. Trabajo en curso ordenado por fases; no adelantes una fase si la anterior no está desplegable y usable. Estado actual: **fases 1–9 completas; la fase 9 (idioma castellano/catalán) está en la rama `feat/interfaz-castellano-catalan`, pendiente de merge; la fase 10 (diseño responsive) está planificada**.
+Ver `SPEC.md` §15. Trabajo en curso ordenado por fases; no adelantes una fase si la anterior no está desplegable y usable. Estado actual: **fases 1–10 completas en `main`; la fase 11 (reordenar ejercicios arrastrando) está en la rama `feat/reordenar-ejercicios-arrastrando`, pendiente de merge**.
