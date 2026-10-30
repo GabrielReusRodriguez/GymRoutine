@@ -595,6 +595,43 @@ textarea {
   border-radius: var(--radius);
   background: var(--bg-elevated);
   overflow: hidden;
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.log-card.dragging {
+  opacity: 0.55;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 22%);
+}
+
+.log-card.drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Asa de arrastre: `touch-action: none` evita que el gesto haga scroll en móvil. */
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -8px 0 -8px -10px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  background: var(--accent-soft);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .log-head {
